@@ -33,6 +33,8 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include "BrowserPlugin.h"
 #include "PluginCore.h"
 #include "Win/WindowContextWin.h"
+#include "Win/D3d10DrawingContext.h"
+#include "ActiveXAsyncDrawingService.h"
 
 #include "registrymap.hpp"
 
@@ -71,6 +73,8 @@ namespace FB {
             // Provides methods for getting <params>
             public IPersistPropertyBag,
 
+			public IViewObjectPresentNotify,
+
             public FB::BrowserPlugin
         {
         public:
@@ -86,6 +90,7 @@ namespace FB {
 
             ActiveXBrowserHostPtr m_host;
             bool m_setReadyDone;
+			CComQIPtr<IViewObjectPresentSite, &IID_IViewObjectPresentSite> m_spIViewObjectPresentSite;
 
         protected:
 
@@ -133,6 +138,12 @@ namespace FB {
                 shutdown();
                 return IOleObjectImpl<CFBControlX>::Close(dwSaveOption);
             }
+
+			/* IViewObjectPresentNotify calls */
+			STDMETHOD(OnPreRender)(void) {
+				HRESULT hr = 0;
+				return hr;
+			}
 
             /* IPersistPropertyBag calls */
             // This will be called once when the browser initializes the property bag (PARAM tags) 
@@ -287,6 +298,7 @@ namespace FB {
             if (!m_serviceProvider)
                 return E_FAIL;
             m_serviceProvider->QueryService(SID_SWebBrowserApp, IID_IWebBrowser2, reinterpret_cast<void**>(&m_webBrowser));
+			hr = m_serviceProvider->QueryInterface(IID_IViewObjectPresentSite, (void **) &m_spIViewObjectPresentSite);
             m_serviceProvider.Release();
 
             if (m_webBrowser) {
@@ -294,7 +306,6 @@ namespace FB {
             }
 
             clientSiteSet();
-
             return S_OK;
         }
 
@@ -338,6 +349,25 @@ namespace FB {
                     if (SUCCEEDED(hr2)) {
                         ptr->setHWND(hwnd);
                     }
+				HRESULT res = S_FALSE;
+				if(pluginMain->asyncDrawing() == FB::AD_DXGI && m_spIViewObjectPresentSite) {
+					
+					FB::Rect posRect;
+					posRect.bottom = prcPosRect->bottom;
+					posRect.left = prcPosRect->left;
+					posRect.right = prcPosRect->right;
+					posRect.top = prcPosRect->top;
+
+					res = m_host->_setAsyncDrawingWindow(m_spIViewObjectPresentSite, posRect);
+				}
+				if(res == S_OK) {
+					ptr->setPlatformAsyncDrawingService(new ActiveXAsyncDrawingService(m_host.get()));
+					ptr->setDrawingModel(FB::PluginWindow::DrawingModelActiveXSurfacePresenter);
+				} else {
+					ptr->setPlatformAsyncDrawingService(NULL);
+					ptr->setDrawingModel(FB::PluginWindow::DrawingModelWindowless);
+				}
+
                 }
             } else {
                 pluginWin.swap(boost::scoped_ptr<PluginWindow>(getFactoryInstance()->createPluginWindowWin(FB::WindowContextWin(m_hWnd))));

@@ -33,6 +33,23 @@ namespace FB {
     class PluginWindow : public PluginEventSource
     {
     public:
+        enum DrawingModel
+        {
+			// Mac
+            DrawingModelQuickDraw,
+            DrawingModelCoreGraphics,
+            DrawingModelCoreAnimation,
+            DrawingModelInvalidatingCoreAnimation,
+			// Windows
+			DrawingModelWindowed,
+			DrawingModelWindowless,
+			DrawingModelNpapiAsyncBitmap,
+			DrawingModelNpapiAsyncDXGI,
+			DrawingModelActiveXSurfacePresenter,
+			// X11
+			DrawingModelX11
+        };
+
         PluginWindow() { };
         virtual ~PluginWindow() { };
 
@@ -78,6 +95,13 @@ namespace FB {
         /// @return The clipping rect of the window
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual FB::Rect getWindowClipping() const = 0;
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// @fn virtual DrawingModel getDrawingModel() const = 0
+        ///
+        /// @brief  getDrawingModel.  Returns the actual drawing model in use.
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        virtual DrawingModel getDrawingModel() const = 0;
     };
 };
 

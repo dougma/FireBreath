@@ -848,3 +848,136 @@ void FB::Npapi::NpapiBrowserHost::Navigate( const std::string& url, const std::s
     GetURL(url.c_str(), target.c_str());
     PopPopupsEnabledState();
 }
+
+NPError NpapiBrowserHost::InitAsyncSurface(NPSize *size, NPImageFormat format, void *initData, NPAsyncSurface *surface) const
+{
+    if(NPNFuncs.initasyncsurface != NULL) {
+        return NPNFuncs.initasyncsurface(m_npp, size, format, initData, surface);
+    } else {
+        return NPERR_GENERIC_ERROR;
+    }
+}
+
+NPError NpapiBrowserHost::FinalizeAsyncSurface(NPAsyncSurface *surface) const
+{
+    if(NPNFuncs.finalizeasyncsurface != NULL) {
+        return NPNFuncs.finalizeasyncsurface(m_npp, surface);
+    } else {
+        return NPERR_GENERIC_ERROR;
+    }
+}
+
+void NpapiBrowserHost::SetCurrentAsyncSurface(NPAsyncSurface *surface, NPRect *changed) const
+{
+    if(NPNFuncs.setcurrentasyncsurface != NULL) {
+        NPNFuncs.setcurrentasyncsurface(m_npp, surface, changed);
+    }
+}
+
+//----------------------------------------------------------------------------------------------- 
+// AsyncDrawing support
+//
+static bool pluginSupportsAsyncBitmapDrawing()
+{
+	return false; // TBD normaly should be true. I simply did not implement this mode. gg
+}
+
+/**
+ * Returns true if the plugin supports DXGI bitmap drawing.
+ */
+static bool pluginSupportsAsyncDXGIDrawing()
+{
+#ifdef XP_WIN
+  return true;
+#else
+  return false;
+#endif
+}
+
+NpAsyncDrawing NpapiBrowserHost::getAsyncDrawingMode()
+{
+	if(m_asyncDrawingHelper) {
+		return m_asyncDrawingHelper->getAsyncDrawingMode();
+	}
+	return AD_NONE;
+}
+
+NPError NpapiBrowserHost::_initAsyncDrawing(NpAsyncDrawing npAsyncDrawingMode)
+{
+	NPError res;
+
+	FBLOG_INFO("NpapiBrowserHost::_initAsyncDrawing", "npAsyncDrawingMode: " << npAsyncDrawingMode);
+	if (npAsyncDrawingMode == AD_BITMAP && pluginSupportsAsyncBitmapDrawing()) {
+		//NPBool supportsAsyncBitmap = false;
+		//res = GetValue(NPNVsupportsAsyncWindowsDXGISurfaceBool, &supportsAsyncBitmap);
+		//if (res == NPERR_NO_ERROR && supportsAsyncBitmap) {
+		//	NPN_SetValue(instance, NPPVpluginDrawingModel, (void*)NPDrawingModelAsyncBitmapSurface);
+		//} else {
+		//	return NPERR_GENERIC_ERROR;
+		//}
+		// GG: not implemented TBD
+		return NPERR_GENERIC_ERROR;
+	}
+	else if(npAsyncDrawingMode == AD_DXGI && pluginSupportsAsyncDXGIDrawing()) {
+		NPBool supportsAsyncDXGI = false;
+		res = GetValue(NPNVsupportsAsyncWindowsDXGISurfaceBool, &supportsAsyncDXGI);
+		if (res == NPERR_NO_ERROR && supportsAsyncDXGI) {
+			SetValue(NPPVpluginDrawingModel, (void*)NPDrawingModelAsyncWindowsDXGISurface);
+		} else {
+			return NPERR_GENERIC_ERROR;
+		}
+	}
+	else {
+		return NPERR_GENERIC_ERROR;
+	}
+
+	m_asyncDrawingHelper = NpapiAsyncDrawingHelperPtr(new NpapiAsyncDrawingHelper(this, npAsyncDrawingMode));
+	if (!m_asyncDrawingHelper)
+		return NPERR_OUT_OF_MEMORY_ERROR;
+
+	return NPERR_NO_ERROR;
+}
+
+void NpapiBrowserHost::_freeAsyncDrawingResources()
+{
+	FBLOG_INFO("NpapiBrowserHost::_freeAsyncDrawingResources", "releasing D3D10 resources");
+
+	if(m_asyncDrawingHelper) {
+		m_asyncDrawingHelper->freeResources();
+		m_asyncDrawingHelper.reset();
+	}
+}
+
+NPError NpapiBrowserHost::_setAsyncDrawingWindow(NPWindow* newWindow)
+{
+	FBLOG_INFO("NpapiBrowserHost::_setAsyncDrawingWindow", "newWindow: " << newWindow);
+
+	if(!m_asyncDrawingHelper) {
+		return NPERR_NO_ERROR;
+	}
+	return m_asyncDrawingHelper->setAsyncDrawingWindow(newWindow);
+}
+
+bool NpapiBrowserHost::beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext)
+{
+	FBLOG_INFO("NpapiBrowserHost::beginDrawAsync", "entering");
+	if(!m_asyncDrawingHelper) {
+		FBLOG_ERROR("NpapiBrowserHost::beginDrawAsync", "m_asyncDrawingHelper==null");
+		return false;
+	}	
+	return m_asyncDrawingHelper->beginDrawAsync(posRect, asyncDrawingContext);
+}
+
+bool NpapiBrowserHost::endDrawAsync()
+{
+	FBLOG_INFO("NpapiBrowserHost::endDrawAsync", "entering");
+	if(!m_asyncDrawingHelper) {
+		FBLOG_ERROR("NpapiBrowserHost::endDrawAsync", "m_asyncDrawingHelper==null");
+		return false;
+	}	
+	return m_asyncDrawingHelper->endDrawAsync();
+}
+
+//
+// AsyncDrawing support
+//----------------------------------------------------------------------------------------------- 

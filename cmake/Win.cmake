@@ -133,6 +133,26 @@ if (NOT ATL_INCLUDE_DIR)
     endif()
 
 endif()
+
+set (FB_IE9_SDK_SOURCE_DIR "${FB_SOURCE_DIR}/3rdParty/microsoft-ie/v9") 
+set (FB_IE9_SDK_LIB_DIR "${FB_IE9_SDK_SOURCE_DIR}/lib") 
+message("-- Found FB_IE9_SDK_LIB_DIR dir: ${FB_IE9_SDK_LIB_DIR}")
+
+set (FB_IE9_SDK_INCLUDE_DIR "${FB_SOURCE_DIR}/3rdParty/microsoft-ie/v9/include") 
+message("-- Found FB_IE9_SDK_INCLUDE_DIR dir: ${FB_IE9_SDK_INCLUDE_DIR}")
+
+#GET_FILENAME_COMPONENT(WINSDK_DIR "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]" REALPATH CACHE)
+## does not work!  gets v6.0!
+set (WINSDK_DIR "C:/Program Files/Microsoft SDKs/Windows/v7.0A") 
+set (WINSDK_INCLUDE_DIR "${WINSDK_DIR}/Include") 
+set (WINSDK_LIB_DIR "${WINSDK_DIR}/Lib") 
+message("-- Found WINSDK_DIR dir: ${WINSDK_DIR}")
+
+set(IE9_INCLUDE_DIRS
+	"C:/Program Files (x86)/Microsoft SDKs/Windows/v7.0A/Include"
+	${FB_IE9_SDK_INCLUDE_DIR}
+	CACHE INTERNAL "IE9 include dirs")
+
 set(ATL_INCLUDE_DIRS
     ${ATL_INCLUDE_DIR}
     ${MFC_INCLUDE_DIR}
@@ -165,7 +185,7 @@ macro(firebreath_sign_file PROJNAME _FILENAME PFXFILE PASSFILE TIMESTAMP_URL)
     if (WIN32)
         if (EXISTS ${PFXFILE})
             message("-- ${_FILENAME} will be signed with ${PFXFILE}")
-            GET_FILENAME_COMPONENT(WINSDK_DIR "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]" REALPATH CACHE)
+            #GET_FILENAME_COMPONENT(WINSDK_DIR "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]" REALPATH CACHE)
             find_program(SIGNTOOL signtool
                 PATHS
                 ${WINSDK_DIR}/bin

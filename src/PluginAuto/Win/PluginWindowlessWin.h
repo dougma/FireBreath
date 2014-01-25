@@ -22,7 +22,8 @@ Copyright 2010 Anson MacKeracher, Firebreath development team
 #include <boost/function.hpp>
 
 #include "Win/WindowContextWin.h"
-
+#include "AsyncDrawingContext.h"
+#include "AsyncDrawingService.h"
 
 namespace FB {
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,6 +83,12 @@ namespace FB {
             // Invalidate the window (Call from any thread)
             void InvalidateWindow() const;
 
+	        DrawingModel getDrawingModel() const { return m_drawingModel; }
+	        void setDrawingModel(DrawingModel drawingModel) { m_drawingModel = drawingModel; }
+
+			void setPlatformAsyncDrawingService(FB::AsyncDrawingService *ptr);
+			FB::AsyncDrawingService *getPlatformAsyncDrawingService() { return m_spPlatformAsyncDrawingService; }
+
         protected:
             HDC m_hdc;
             HWND m_browserHwnd;
@@ -89,6 +96,9 @@ namespace FB {
             uint32_t m_width, m_height; 
             int32_t m_clipTop, m_clipLeft, m_clipBottom, m_clipRight;
             InvalidateWindowFunc m_invalidateWindow;
+
+			DrawingModel m_drawingModel;
+			FB::AsyncDrawingService *m_spPlatformAsyncDrawingService;
     };    
 };
 

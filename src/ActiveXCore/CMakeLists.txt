@@ -22,6 +22,7 @@ if (VERBOSE)
 endif()
 
 include_directories(
+	BEFORE
     ${GECKOSDK_SOURCE_DIR}
     ${GTK_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -32,6 +33,13 @@ include_directories(
     ${ATL_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     )
+
+if (WIN32)
+include_directories(
+    BEFORE
+    ${IE9_INCLUDE_DIRS}
+	)
+endif()
 
 file (GLOB AXDOM RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     AXDOM/*.cpp
@@ -47,6 +55,8 @@ file (GLOB SCRIPTING RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 file (GLOB PLUGIN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    ActiveXAsync*
+    ActiveXD3d*
     ActiveXFact*
     FBControl.*
     ax*.cpp

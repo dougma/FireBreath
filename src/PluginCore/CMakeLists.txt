@@ -22,6 +22,7 @@ if (VERBOSE)
 endif()
 
 include_directories(
+    BEFORE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${GTK_INCLUDE_DIRS}
     ${FB_SCRIPTINGCORE_SOURCE_DIR}
@@ -32,7 +33,7 @@ include_directories(
     ${ATL_INCLUDE_DIRS}
     ${FB_CONFIG_DIR}
     )
-
+ 
 file (GLOB EVENTS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     PluginEvents/[^.]*.h
     PluginEvents/[^.]*.cpp

@@ -78,6 +78,8 @@ namespace FB {
         // Windowed plugins get OS events directly through their window
         boost::int16_t HandleEvent(NPEvent* evt) { return 0; }
         virtual void InvalidateWindow() const;
+       DrawingModel getDrawingModel() const { return DrawingModelWindowed; }
+
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// @fn HWND PluginWindowWin::setSuppressEraseBackground(bool suppressEraseBackground)

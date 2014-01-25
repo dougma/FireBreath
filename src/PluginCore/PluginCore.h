@@ -29,6 +29,13 @@ using boost::assign::list_of;
 
 namespace FB {
 
+	typedef enum {
+	  AD_NOT_SET = -1,
+	  AD_NONE,
+	  AD_BITMAP,
+	  AD_DXGI
+	} AsyncDrawing;
+
     class PluginWindow;
     class PluginEvent;
     class BrowserStreamRequest;
@@ -283,6 +290,19 @@ namespace FB {
         virtual bool isWindowless();
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// @fn virtual AsyncDrawing PluginCore::asyncDrawing() = 0
+        ///
+		/// @brief  Called by the browser to query how this plugin should support async drawing (currently only in Windows IE or Firefox). 
+        ///
+        /// The default implementation supports an "asyncDrawing" param and checks m_params["asyncDrawing"]
+        /// to determine if the plugin should support async drawing and which mode.  
+		/// To force always a specific async drawing mode, override and return it. To force no async drawing, override and return AD_NONE (0).
+        /// 
+        /// @return async drawing mode, AD_NONE if not. 
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        virtual AsyncDrawing asyncDrawing();
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// @fn virtual void PluginCore::setFSPath(const std::string& path)
         ///
         /// @brief  Called by the browser to set the file system path of the plugin module. 
@@ -356,6 +376,7 @@ namespace FB {
         JSAPIPtr m_api;
         boost::tribool m_windowLessParam;
         bool m_scriptingOnly;
+        AsyncDrawing m_asyncDrawingParam;
     };
 };
 

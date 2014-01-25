@@ -93,6 +93,8 @@
         var pluginCB2 = null;
         var pluginCB3 = null;
 
+	    var testAsyncDrawing = true;
+
         var pingSeq = 0;
         var pingQ = {};
         var pingSuccess = 0;
@@ -113,6 +115,13 @@
             pluginCB = callback;
             var html = '<object id="testPlugin" type="' + mimeType + '" width="100%" height="100%" onload="alert(\'The plugin has loaded 1!\');">';
             html += '<param name="onload" value="pluginCB" />';
+			
+	    if(testAsyncDrawing) {
+                html += '<param name="windowless" value="1" />'; 
+                html += '<param name="asyncdrawing" value="2" />'; // AD_NONE=0, AD_BITMAP=1, AD_DXGI=2
+                html += '<param name="color" value="2F00FF00" />'; // AARRGGBB
+            }
+            
             html += '</object>';
             dest[0].innerHTML = html;
         }

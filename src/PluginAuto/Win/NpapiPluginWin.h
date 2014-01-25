@@ -31,6 +31,7 @@ namespace FB {
     public:
         NpapiPluginWin(const NpapiBrowserHostPtr& host, const std::string& mimetype);
         virtual ~NpapiPluginWin(void);
+        void init(NPMIMEType pluginType, int16_t argc, char* argn[], char *argv[]);
 
     protected:
         FB::PluginWindow *pluginWin;
@@ -42,8 +43,10 @@ namespace FB {
         // plugin instance
         NPError SetWindow(NPWindow* window);
         int16_t HandleEvent(void* event);
-    };
 
+	protected:
+		void initDrawingModel(NPWindow* window, FB::PluginWindowlessWin* win);
+	};
 }; }; // FB::Npapi
 
 #endif

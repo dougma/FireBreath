@@ -45,7 +45,7 @@ void PluginCore::setPlatform(const std::string& opsys, const std::string& browse
 \***************************/
 
 PluginCore::PluginCore() : m_paramsSet(false), m_Window(NULL),
-    m_windowLessParam(boost::indeterminate), m_scriptingOnly(false)
+    m_windowLessParam(boost::indeterminate), m_scriptingOnly(false), m_asyncDrawingParam(AD_NOT_SET)
 {
     FB::Log::initLogging();
     // This class is only created on the main UI thread,
@@ -142,6 +142,26 @@ bool PluginCore::isWindowless()
 	}
     }
     return m_windowLessParam;
+}
+
+AsyncDrawing PluginCore::asyncDrawing()
+{
+    m_host->initJS(this);
+    if (m_asyncDrawingParam != AD_NOT_SET) {
+        return m_asyncDrawingParam;
+    } else {
+        FB::VariantMap::iterator itr = m_params.find("asyncdrawing");
+        if (itr != m_params.end()) {
+            try {
+                m_asyncDrawingParam = (AsyncDrawing)itr->second.convert_cast<int>();
+                return m_asyncDrawingParam;
+            } catch (const FB::bad_variant_cast& ex) {
+                FB_UNUSED_VARIABLE(ex);
+            }
+        }
+    }
+    m_asyncDrawingParam = AD_NONE;
+    return m_asyncDrawingParam;
 }
 
 void FB::PluginCore::SetWindow( PluginWindow *win )

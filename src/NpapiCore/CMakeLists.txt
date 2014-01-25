@@ -22,6 +22,7 @@ if (VERBOSE)
 endif()
 
 include_directories(
+    BEFORE
     ${FB_GECKOSDK_SOURCE_DIR}
     ${GTK_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -40,6 +41,8 @@ file (GLOB SCRIPTING RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 file (GLOB PLUGIN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    NpapiAsync*.cpp
+    NpapiAsync*.h
     NpapiPlugin*.cpp
     NpapiPlugin*.h
     NpapiStream.*

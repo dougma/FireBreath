@@ -22,6 +22,7 @@ Copyright 2009 PacketPass, Inc and the Firebreath development team
 #include "Win/PluginWindowlessWin.h"
 #include "NpapiPluginFactory.h"
 #include "PluginInfo.h"
+#include "NpapiAsyncDrawingService.h"
 #include "precompiled_headers.h" // On windows, everything above this line in PCH
 
 using namespace FB::Npapi;
@@ -43,6 +44,14 @@ NpapiPluginWin::NpapiPluginWin(const NpapiBrowserHostPtr& host, const std::strin
 NpapiPluginWin::~NpapiPluginWin()
 {
     delete pluginWin; pluginWin = NULL;
+}
+
+void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], char *argv[]) {
+    NpapiPlugin::init(pluginType, argc, argn, argv);
+
+	if(pluginMain->asyncDrawing() > FB::AD_NONE) {
+		NPError res = m_npHost->_initAsyncDrawing((FB::Npapi::NpAsyncDrawing)pluginMain->asyncDrawing());
+	}
 }
 
 void NpapiPluginWin::invalidateWindow( uint32_t left, uint32_t top, uint32_t right, uint32_t bottom )
@@ -95,7 +104,8 @@ NPError NpapiPluginWin::SetWindow(NPWindow* window)
             win->setWindowClipping(window->clipRect.top, window->clipRect.left,
                                    window->clipRect.bottom, window->clipRect.right);
             win->setInvalidateWindowFunc(boost::bind(&NpapiPluginWin::invalidateWindow, this, _1, _2, _3, _4));
-            pluginMain->SetWindow(win);
+			initDrawingModel(window, win);
+			pluginMain->SetWindow(win);
             pluginWin = win;
         } else {
             win->setWindowPosition(window->x, window->y, window->width, window->height);
@@ -157,3 +167,24 @@ int16_t NpapiPluginWin::HandleEvent(void* event) {
     return false;
 }
 
+void NpapiPluginWin::initDrawingModel(NPWindow* window, FB::PluginWindowlessWin* win) 
+{
+	NpAsyncDrawing asyncDrawingMode = m_npHost->getAsyncDrawingMode();
+
+	if(asyncDrawingMode > FB::Npapi::AD_NONE) {			
+		FB::PluginWindow::DrawingModel drawingModel = FB::PluginWindow::DrawingModelWindowless;
+		NPError res = m_npHost->_setAsyncDrawingWindow(window);			
+		if(res == NPERR_NO_ERROR) {
+			if(!win->getPlatformAsyncDrawingService())
+				win->setPlatformAsyncDrawingService(new NpapiAsyncDrawingService(m_npHost.get())); 
+			if(asyncDrawingMode == AD_BITMAP) {
+				drawingModel = FB::PluginWindow::DrawingModelNpapiAsyncBitmap;
+			} else {
+				drawingModel = FB::PluginWindow::DrawingModelNpapiAsyncDXGI;
+			}
+		} else {
+			win->setPlatformAsyncDrawingService(NULL);
+		}
+		win->setDrawingModel(drawingModel);
+	}
+}
