@@ -19,9 +19,6 @@
                     // Make sure the newest version of the plugin will be found.
                     navigator.plugins.refresh(false);
                 }
-                var ua = $.browser;
-                var uaVersion = parseFloat(ua.version);
-                var browser = "";
                 var getUrlParameters = function() {
                     var map = {};
                     var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
@@ -33,23 +30,6 @@
                 var decode = function(str) {
                     return unescape(str.replace(/\+/g, " "));
                 };
-                if (ua.mozilla) {
-                    var r = RegExp(/(Firefox)\/([0-9.]+)/);
-                    var matches = navigator.userAgent.match(r);
-                    browser = matches[0].replace('/', ' ');
-                } else if (ua.webkit) {
-                    var chrome = RegExp(/Chrome\/([0-9.]+)/);
-                    var safari = RegExp(/Version\/([0-9.]+)/);
-                    if (navigator.userAgent.match(chrome)) {
-                        browser = "Chrome " + navigator.userAgent.match(chrome)[1];
-                    } else {
-                        browser = "Safari " + navigator.userAgent.match(safari)[1];
-                    }
-                } else if (ua.msie) {
-                    browser = "Internet Explorer " + ua.version;
-                } else {
-                    browser = "Unknown";
-                }
                 var autoSwitch = false;
                 var nextSrc = "srcA";
                 var updateDelay = function() {
@@ -62,7 +42,6 @@
                     $("#switch").trigger("click");
                 };
                 
-                $("#browserVersion").html(browser);
                 $("#pluginVersion").html("Plugin Version: " + plugin.pluginVersion);
                 $("#switch").click(function() {
                     var elem = $(this);

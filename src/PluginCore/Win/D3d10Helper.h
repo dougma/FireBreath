@@ -16,19 +16,15 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #ifndef H_FB_DIRECT3DHELPER
 #define H_FB_DIRECT3DHELPER
 
-#ifndef _WINDOWS
-#define ID3D10Device1 void *
-#define ID3D10Texture2D void *
-static HRESULT getD3D10Device(void** returnedDevice) { return S_OK; }
-#else
 #include "win_common.h"
 #include <d3d10_1.h>
-#endif
-
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
+#include "logging.h"
 #include "APITypes.h"
 #include "D3d10DrawingContext.h"
+
+// todo: split into cpp
 
 //----------------------------------------------------------------------------------------------- 
 // D3D10 functions

@@ -345,28 +345,24 @@ namespace FB {
                 ptr->setInvalidateWindowFunc(boost::bind(&CFBControlX::invalidateWindow, this, _1, _2, _3, _4));
                 if (m_spInPlaceSite) {
                     HWND hwnd = 0;
-					HRESULT hr2 = m_spInPlaceSite->GetWindow(&hwnd);
+                    HRESULT hr2 = m_spInPlaceSite->GetWindow(&hwnd);
                     if (SUCCEEDED(hr2)) {
                         ptr->setHWND(hwnd);
                     }
-				HRESULT res = S_FALSE;
-				if(pluginMain->asyncDrawing() == FB::AD_DXGI && m_spIViewObjectPresentSite) {
-					
-					FB::Rect posRect;
-					posRect.bottom = prcPosRect->bottom;
-					posRect.left = prcPosRect->left;
-					posRect.right = prcPosRect->right;
-					posRect.top = prcPosRect->top;
+                    HRESULT res = S_FALSE;
+                    if (pluginMain->asyncDrawing() == FB::AD_DXGI && m_spIViewObjectPresentSite) {
+                        FB::Rect posRect;
+                        posRect.bottom = prcPosRect->bottom;
+                        posRect.left = prcPosRect->left;
+                        posRect.right = prcPosRect->right;
+                        posRect.top = prcPosRect->top;
 
-					res = m_host->_setAsyncDrawingWindow(m_spIViewObjectPresentSite, posRect);
-				}
-				if(res == S_OK) {
-					ptr->setPlatformAsyncDrawingService(new ActiveXAsyncDrawingService(m_host.get()));
-					ptr->setDrawingModel(FB::PluginWindow::DrawingModelActiveXSurfacePresenter);
-				} else {
-					ptr->setPlatformAsyncDrawingService(NULL);
-					ptr->setDrawingModel(FB::PluginWindow::DrawingModelWindowless);
-				}
+                        ptr->setPlatformAsyncDrawingService(new ActiveXAsyncDrawingService(m_spIViewObjectPresentSite, posRect));
+                        ptr->setDrawingModel(FB::PluginWindow::DrawingModelActiveXSurfacePresenter);
+                    } else {
+                        ptr->setPlatformAsyncDrawingService(NULL);
+                        ptr->setDrawingModel(FB::PluginWindow::DrawingModelWindowless);
+                    }
 
                 }
             } else {

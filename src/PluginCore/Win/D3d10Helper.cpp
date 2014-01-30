@@ -15,7 +15,7 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #include "logging.h"
 
 #include "D3d10DrawingContext.h"
-#include "d3d10helper.h"
+#include "D3d10Helper.h"
 
 using namespace FB;
 

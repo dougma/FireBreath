@@ -20,18 +20,7 @@
 #include <mshtml.h>
 #include "PluginWindowWin.h"
 #include "PluginWindowlessWin.h"
-
 #include "Win/D3d10DrawingContext.h"
-
-#ifdef HAS_LEAKFINDER
-#define XML_LEAK_FINDER
-#include "LeakFinder/LeakFinder.h"
-#endif
-#endif
-
-
-#ifdef HAS_LEAKFINDER
-boost::scoped_ptr<LeakFinderXmlOutput> FBTestPlugin::pOut;
 #endif
 
 void FBTestPlugin::StaticInitialize()
@@ -39,30 +28,17 @@ void FBTestPlugin::StaticInitialize()
     FBLOG_INFO("StaticInit", "Static Initialize");
     // Place one-time initialization stuff here; As of FireBreath 1.4 this should only
     // be called once per process
-
-#ifdef HAS_LEAKFINDER
-#ifdef XML_LEAK_FINDER
-    pOut.swap(boost::scoped_ptr<LeakFinderXmlOutput>(new LeakFinderXmlOutput(L"C:\\code\\firebreath_mem.xml")));
-#endif
-    InitLeakFinder();
-#endif
 }
 
 void FBTestPlugin::StaticDeinitialize()
 {
-#ifdef HAS_LEAKFINDER
-    DeinitLeakFinder(pOut.get());
-    pOut.reset();
-#endif
     FBLOG_INFO("StaticInit", "Static Deinitialize");
     // Place one-time deinitialization stuff here. This should be called just before
     // the plugin library is unloaded
-
 }
 
-
 FBTestPlugin::FBTestPlugin(const std::string& mimetype) :
-    m_mimetype(mimetype), m_asyncTestBgColor((int)-1)
+    m_mimetype(mimetype)
 {
 }
 
@@ -124,12 +100,6 @@ bool FBTestPlugin::onAttached( FB::AttachedEvent *evt, FB::PluginWindow* )
     return false;
 }
 
-void FBTestPlugin::SetWindow( FB::PluginWindow* win)
-{
-    FBLOG_INFO("FBTestPlugin::SetWindow", "FBTestPlugin::SetWindow");
-	FB::PluginCore::SetWindow(win);
-}
-
 bool FBTestPlugin::onDetached( FB::DetachedEvent *evt, FB::PluginWindow* )
 {
     // This is called when the window is detached! You must not draw after this!
@@ -139,22 +109,24 @@ bool FBTestPlugin::onDetached( FB::DetachedEvent *evt, FB::PluginWindow* )
 bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
 {
     FB::Rect pos = win->getWindowPosition();
-	FB::PluginWindow::DrawingModel drawingModel = win->getDrawingModel();
+    FB::PluginWindow::DrawingModel drawingModel = win->getDrawingModel();
     FBLOG_INFO("FBTestPlugin::draw", "PluginWindow::DrawingModel() : " << drawingModel );
+
 #if FB_WIN
     HDC hDC;
     FB::PluginWindowlessWin *wndLess = dynamic_cast<FB::PluginWindowlessWin*>(win);
     FB::PluginWindowWin *wnd = dynamic_cast<FB::PluginWindowWin*>(win);
     PAINTSTRUCT ps;
     if (wndLess) {
-		if(drawingModel == FB::PluginWindow::DrawingModelActiveXSurfacePresenter ||
-			drawingModel == FB::PluginWindow::DrawingModelNpapiAsyncDXGI) {
-			FBLOG_INFO("FBTestPlugin::draw", "calling drawAsync().  win: " << win << "; pos: " << pos.left << "," << pos.top);
-			if(drawAsync(win, pos)) {
-				return true;
-			}
-			wndLess->setDrawingModel(FB::PluginWindow::DrawingModelWindowless); // oh oh: in npapi you can call the function to set this only during Initialization TBD!
-		}
+        if (drawingModel == FB::PluginWindow::DrawingModelActiveXSurfacePresenter ||
+            drawingModel == FB::PluginWindow::DrawingModelNpapiAsyncDXGI) 
+        {
+            FBLOG_INFO("FBTestPlugin::draw", "calling drawAsync().  win: " << win << "; pos: " << pos.left << "," << pos.top);
+            if (drawAsync(win, pos)) {
+                return true;
+            }
+            wndLess->setDrawingModel(FB::PluginWindow::DrawingModelWindowless); // oh oh: in npapi you can call the function to set this only during Initialization TBD!
+        }
 
         hDC = wndLess->getHDC();
     } else if (wnd) {
@@ -178,84 +150,80 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
         EndPaint(wnd->getHWND(), &ps);
     }
 #endif
+
     return true;
 }
 
 bool FBTestPlugin::drawAsync(FB::PluginWindow* win, FB::Rect pos)
-{	
+{
 #if FB_WIN
     FBLOG_INFO("FBTestPlugin::drawAsync", "PluginCore::drawAsync() pos: " << pos.left << "," << pos.top );
 
-	FB::PluginWindowlessWin *wndLess = dynamic_cast<FB::PluginWindowlessWin*>(win);
-	if(wndLess == NULL)
-		return false;
+    FB::PluginWindowlessWin *wndLess = dynamic_cast<FB::PluginWindowlessWin*>(win);
+    if(wndLess == NULL)
+        return false;
 
-	FB::AsyncDrawingService *drawingService;
-	drawingService = dynamic_cast<FB::AsyncDrawingService *>(wndLess->getPlatformAsyncDrawingService());
+    FB::AsyncDrawingService *drawingService;
+    drawingService = dynamic_cast<FB::AsyncDrawingService *>(wndLess->getPlatformAsyncDrawingService());
 
-	if(!drawingService)
-		return false;
+    if(!drawingService)
+        return false;
 
-	void *asyncDrawingContext;
-	FB::D3d10DrawingContext *drawingContext;
+    void *asyncDrawingContext;
+    FB::D3d10DrawingContext *drawingContext;
 
     FBLOG_INFO("FBTestPlugin::drawAsync", "calling beginDrawAsync...");
-	if(drawingService->beginDrawAsync(pos, &asyncDrawingContext)==false)
-		return false;
+    if(drawingService->beginDrawAsync(pos, &asyncDrawingContext)==false)
+        return false;
 
-	drawingContext = reinterpret_cast<FB::D3d10DrawingContext *>(asyncDrawingContext);
-	if(drawingContext == NULL)
-		return false;
+    drawingContext = reinterpret_cast<FB::D3d10DrawingContext *>(asyncDrawingContext);
+    if(drawingContext == NULL)
+        return false;
 
-	uint32_t rgba = asyncTestBgColor();
+    uint32_t rgba = asyncTestBgColor();
 
-	unsigned char subpixels[4];
-	subpixels[0] = rgba & 0xFF;
-	subpixels[1] = (rgba & 0xFF00) >> 8;
-	subpixels[2] = (rgba & 0xFF0000) >> 16;
-	subpixels[3] = (rgba & 0xFF000000) >> 24;
+    unsigned char subpixels[4];
+    subpixels[0] = rgba & 0xFF;
+    subpixels[1] = (rgba & 0xFF00) >> 8;
+    subpixels[2] = (rgba & 0xFF0000) >> 16;
+    subpixels[3] = (rgba & 0xFF000000) >> 24;
 
-	float color[4];
-	color[2] = float(subpixels[3] * subpixels[0]) / 0xFE01;
-	color[1] = float(subpixels[3] * subpixels[1]) / 0xFE01;
-	color[0] = float(subpixels[3] * subpixels[2]) / 0xFE01;
-	color[3] = float(subpixels[3]) / 0xFF;
-	drawingContext->dev->ClearRenderTargetView(drawingContext->rtView, color);
+    float color[4];
+    color[2] = float(subpixels[3] * subpixels[0]) / 0xFE01;
+    color[1] = float(subpixels[3] * subpixels[1]) / 0xFE01;
+    color[0] = float(subpixels[3] * subpixels[2]) / 0xFE01;
+    color[3] = float(subpixels[3]) / 0xFF;
+    drawingContext->dev->ClearRenderTargetView(drawingContext->rtView, color);
 
     FBLOG_INFO("FBTestPlugin::drawAsync", "calling endDrawAsync...");
-	if(!drawingService->endDrawAsync()) {
-		return false;
-	}
+    if(!drawingService->endDrawAsync()) {
+        return false;
+    }
 #endif    
-	return true;
+    return true;
 }
 
 uint32_t FBTestPlugin::asyncTestBgColor()
 {
-    m_host->initJS(this);
-    if ((int)m_asyncTestBgColor != -1) {
-        return m_asyncTestBgColor;
-    } else {
-        FB::VariantMap::iterator itr = m_params.find("color");
-        if (itr != m_params.end()) {
-            try {
-				std::stringstream ss;
-				ss << std::hex << itr->second.convert_cast<std::string>();
-				ss >> m_asyncTestBgColor;
-                return m_asyncTestBgColor;
-            } catch (const FB::bad_variant_cast& ex) {
-                FB_UNUSED_VARIABLE(ex);
-            }
+    if (m_asyncTestBgColor) {
+        return *m_asyncTestBgColor;
+    }
+
+    FB::VariantMap::iterator itr = m_params.find("color");
+    if (itr != m_params.end()) {
+        try {
+            uint32_t v;
+            std::stringstream ss;
+            ss << std::hex << itr->second.convert_cast<std::string>();
+            ss >> v;
+            m_asyncTestBgColor = v;
+            return *m_asyncTestBgColor;
+        } catch (const FB::bad_variant_cast& ex) {
+            FB_UNUSED_VARIABLE(ex);
         }
     }
     m_asyncTestBgColor = 0x7F00FF00; // if no param is given set the default to semi-transparent green (format is 0xAARRGGBB)
-    return m_asyncTestBgColor;
-}
-
-bool FBTestPlugin::isWindowless()
-{
-    return PluginCore::isWindowless();
-    //return true;
+    return *m_asyncTestBgColor;
 }
 
 void FBTestPlugin::onPluginReady()
@@ -265,10 +233,6 @@ void FBTestPlugin::onPluginReady()
         return;
 
     FB::URI uri = FB::URI::fromString(window->getLocation());
-    if (uri.query_data.find("log") != uri.query_data.end()) {
-        m_host->setEnableHtmlLog(true);
-    } else {
-        m_host->setEnableHtmlLog(false);
-    }
-
+    bool log = uri.query_data.find("log") != uri.query_data.end();
+    m_host->setEnableHtmlLog(log);
 }

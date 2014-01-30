@@ -17,23 +17,17 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #define H_ACTIVEXD3D10HELPER
 
 #include "win_common.h"
-#include <mshtml.h>
-#include <atlctl.h>
-#include "BrowserHost.h"
+#include <mshtml.h> // IViewObjectPresentSite, ISurfacePresenter
 #include "APITypes.h"
 #include "FBPointers.h"
 
-#include "ActiveXBrowserHost.h"
 #include "Win/D3d10Helper.h"
-
-struct ISurfacePresenter;
 
 namespace FB {
 
     namespace ActiveX {
-	    class ActiveXBrowserHost;
-    
-		FB_FORWARD_PTR(ActiveXD3d10Helper);
+
+        FB_FORWARD_PTR(ActiveXD3d10Helper);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// @class  ActiveXD3d10Helper
@@ -44,26 +38,21 @@ namespace FB {
             public FB::D3d10Helper
         {
         public:
-            ActiveXD3d10Helper(ActiveXBrowserHost *theBrowserHost);
-            virtual ~ActiveXD3d10Helper(void);
+            ActiveXD3d10Helper(CComPtr<IViewObjectPresentSite> pViewObjectPresentSite, const FB::Rect &posRect);
 
-			virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext);
-			virtual bool endDrawAsync();
-			virtual void freeResources();  // this must be called instead of destructor!
-		
-		public:
-			HRESULT setAsyncDrawingWindow(void *pIViewObjectPresentSite, const FB::Rect &posRect);
+            virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext);
+            virtual bool endDrawAsync();
+            virtual void freeResources();  // this must be called instead of destructor!
 
         protected:
-			HRESULT _renewAsyncDrawing(const FB::Rect &posRect);
+            HRESULT _renewAsyncDrawing(const FB::Rect &posRect);
 
         protected:
-			ActiveXBrowserHost *browserHost;
-   		    void *m_pIViewObjectPresentSite;
-			ISurfacePresenter* m_spISurfacePresenter;
+            CComPtr<IViewObjectPresentSite> m_pViewObjectPresentSite;
+            CComPtr<ISurfacePresenter> m_pSurfacePresenter;
 
-			int m_currentBufferIndex;
-	        FB::Rect m_posRect;
+            int m_currentBufferIndex;
+            FB::Rect m_posRect;
         };
     }
 }

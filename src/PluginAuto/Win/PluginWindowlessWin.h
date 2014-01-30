@@ -18,9 +18,10 @@ Copyright 2010 Anson MacKeracher, Firebreath development team
 #include "win_common.h"
 #include "PluginWindow.h"
 
-#include "Win/KeyCodesWin.h"
 #include <boost/function.hpp>
+#include <boost/scoped_ptr.hpp>
 
+#include "Win/KeyCodesWin.h"
 #include "Win/WindowContextWin.h"
 #include "AsyncDrawingContext.h"
 #include "AsyncDrawingService.h"
@@ -87,7 +88,7 @@ namespace FB {
 	        void setDrawingModel(DrawingModel drawingModel) { m_drawingModel = drawingModel; }
 
 			void setPlatformAsyncDrawingService(FB::AsyncDrawingService *ptr);
-			FB::AsyncDrawingService *getPlatformAsyncDrawingService() { return m_spPlatformAsyncDrawingService; }
+			FB::AsyncDrawingService *getPlatformAsyncDrawingService() { return m_pPlatformAsyncDrawingService.get(); }
 
         protected:
             HDC m_hdc;
@@ -98,7 +99,7 @@ namespace FB {
             InvalidateWindowFunc m_invalidateWindow;
 
 			DrawingModel m_drawingModel;
-			FB::AsyncDrawingService *m_spPlatformAsyncDrawingService;
+			boost::scoped_ptr<FB::AsyncDrawingService> m_pPlatformAsyncDrawingService;
     };    
 };
 

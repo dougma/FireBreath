@@ -273,31 +273,6 @@ namespace FB
         /// @see FB::BrowserStreamRequest
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual BrowserStreamPtr createUnsolicitedStream( const BrowserStreamRequest& req ) const;
-        // Methods for asynchronous drawing
-
-    public:
-        ////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// @fn virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext) const = 0
-        ///
-        /// @brief  initiates and returns an asyncDrawingContext to be used for drawing. 
-        ///
-        /// @todo   Document this better
-        ///
-		/// @param  posRect   the window position  
-		///
-		/// @param  asyncDrawingContext         a platform and technology specific drawing context (returned by the function)
-        ///
-        /// @return false if it fails
-		virtual bool beginDrawAsync(const FB::Rect &posRect, void** asyncDrawingContext) = 0;
-        ////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// @fn virtual bool endDrawAsync() const = 0
-        ///
-        /// @brief  end drawing. 
-        ///
-        /// @todo   Document this better
-        ///
-        /// @return false if it fails
-		virtual bool endDrawAsync() = 0;
 
         // Methods for accessing the DOM
     public:

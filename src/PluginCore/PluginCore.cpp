@@ -139,25 +139,23 @@ bool PluginCore::isWindowless()
             } catch (const FB::bad_variant_cast& ex) {
                 FB_UNUSED_VARIABLE(ex);
             }
-	}
+        }
     }
     return m_windowLessParam;
 }
 
 AsyncDrawing PluginCore::asyncDrawing()
 {
-    m_host->initJS(this);
     if (m_asyncDrawingParam != AD_NOT_SET) {
         return m_asyncDrawingParam;
-    } else {
-        FB::VariantMap::iterator itr = m_params.find("asyncdrawing");
-        if (itr != m_params.end()) {
-            try {
-                m_asyncDrawingParam = (AsyncDrawing)itr->second.convert_cast<int>();
-                return m_asyncDrawingParam;
-            } catch (const FB::bad_variant_cast& ex) {
-                FB_UNUSED_VARIABLE(ex);
-            }
+    }
+    FB::VariantMap::iterator itr = m_params.find("asyncdrawing");
+    if (itr != m_params.end()) {
+        try {
+            m_asyncDrawingParam = (AsyncDrawing)itr->second.convert_cast<int>();
+            return m_asyncDrawingParam;
+        } catch (const FB::bad_variant_cast& ex) {
+            FB_UNUSED_VARIABLE(ex);
         }
     }
     m_asyncDrawingParam = AD_NONE;

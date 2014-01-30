@@ -18,18 +18,12 @@ FB::PluginWindowlessWin* FB::createPluginWindowless(const FB::WindowContextWindo
 PluginWindowlessWin::PluginWindowlessWin(const FB::WindowContextWindowless& ctx)
     : m_hdc(ctx.drawable)
     , m_browserHwnd(NULL)
-    , m_spPlatformAsyncDrawingService(NULL), m_drawingModel(DrawingModelWindowless) 
+    , m_drawingModel(DrawingModelWindowless) 
     , m_x(0), m_y(0), m_width(0), m_height(0)
     , m_clipTop(0), m_clipLeft(0), m_clipBottom(0), m_clipRight(0) 
 {}
 
-PluginWindowlessWin::~PluginWindowlessWin() 
-{
-	if(m_spPlatformAsyncDrawingService)  {
-		delete m_spPlatformAsyncDrawingService;
-		m_spPlatformAsyncDrawingService = NULL;
-	}
-}
+PluginWindowlessWin::~PluginWindowlessWin() {}
 
 void PluginWindowlessWin::translateWindowToPlugin(int32_t &x, int32_t &y) const {
     int32_t tempX, tempY;
@@ -204,10 +198,6 @@ void FB::PluginWindowlessWin::InvalidateWindow() const
 }
 
 void PluginWindowlessWin::setPlatformAsyncDrawingService(FB::AsyncDrawingService *ptr) 
-{ 
-	if(m_spPlatformAsyncDrawingService && (void *)m_spPlatformAsyncDrawingService != (void *)ptr)  {
-		delete m_spPlatformAsyncDrawingService;
-	}
-
-	m_spPlatformAsyncDrawingService = ptr; 
+{
+    m_pPlatformAsyncDrawingService.reset(ptr);
 }

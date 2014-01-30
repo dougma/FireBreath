@@ -17,7 +17,7 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #define H_FB_ASYNCDRAWINGSERVICE
 
 namespace FB {
-	struct Rect;
+    struct Rect;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// @class  AsyncDrawingService
@@ -26,13 +26,13 @@ namespace FB {
     ///
     /// This is the base class for all asynchronous drawing services that are used in the plugin.  
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-	class AsyncDrawingService
-	{
-		public:
-			virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext) = 0;
-			virtual bool endDrawAsync() = 0;
-	};
+    class AsyncDrawingService
+    {
+    public:
+        virtual ~AsyncDrawingService() {};
+        virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext) = 0;
+        virtual bool endDrawAsync() = 0;
+    };
 };
 
 #endif
-

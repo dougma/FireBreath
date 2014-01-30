@@ -41,9 +41,6 @@ namespace FB {
     class BrowserStreamRequest;
     namespace ActiveX {
 
-	    FB_FORWARD_PTR(ActiveXD3d10Helper);
-	    typedef boost::shared_ptr<ActiveXD3d10Helper> ActiveXD3d10HelperPtr;    
-
         FB_FORWARD_PTR(ActiveXBrowserHost);
         FB_FORWARD_PTR(IDispatchAPI);
 
@@ -69,11 +66,6 @@ namespace FB {
 
             IDispatchEx* getJSAPIWrapper(const FB::JSAPIWeakPtr& api, bool autoRelease = false);
             IDispatchWRef getIDispatchRef(IDispatch* obj);
-
-		public:
-			HRESULT _setAsyncDrawingWindow(void *pIViewObjectPresentSite, const FB::Rect &posRect);
-			virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext);
-			virtual bool endDrawAsync();
 
         public:
             FB::DOM::DocumentPtr getDOMDocument();
@@ -104,9 +96,6 @@ namespace FB {
             mutable FB::DOM::WindowPtr m_window;
             mutable FB::DOM::DocumentPtr m_document;
             boost::scoped_ptr<FB::WinMessageWindow> m_messageWin;
-
-        protected:
-			ActiveXD3d10HelperPtr m_D3d10Helper;
 
         private:
             mutable boost::shared_mutex m_xtmutex;

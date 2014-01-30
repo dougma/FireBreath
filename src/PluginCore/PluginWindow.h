@@ -35,19 +35,19 @@ namespace FB {
     public:
         enum DrawingModel
         {
-			// Mac
+            // Mac
             DrawingModelQuickDraw,
             DrawingModelCoreGraphics,
             DrawingModelCoreAnimation,
             DrawingModelInvalidatingCoreAnimation,
-			// Windows
-			DrawingModelWindowed,
-			DrawingModelWindowless,
-			DrawingModelNpapiAsyncBitmap,
-			DrawingModelNpapiAsyncDXGI,
-			DrawingModelActiveXSurfacePresenter,
-			// X11
-			DrawingModelX11
+            // Windows
+            DrawingModelWindowed,
+            DrawingModelWindowless,
+            DrawingModelNpapiAsyncBitmap,
+            DrawingModelNpapiAsyncDXGI,
+            DrawingModelActiveXSurfacePresenter,
+            // X11
+            DrawingModelX11
         };
 
         PluginWindow() { };

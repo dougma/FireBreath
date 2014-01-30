@@ -16,47 +16,31 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #ifndef H_ACTIVEXASYNCDRAWINGSERVICE
 #define H_ACTIVEXASYNCDRAWINGSERVICE
 
-#include "win_common.h"
+#include <atlbase.h>
 #include <mshtml.h>
-#include <atlctl.h>
-#include <map>
-#include "BrowserHost.h"
 #include "APITypes.h"
 #include "FBPointers.h"
-#include "SafeQueue.h"
-#include "ShareableReference.h"
-#include "ActiveXFactoryDefinitions.h"
-
-#include "Win/D3d10DrawingContext.h"
 #include "AsyncDrawingService.h"
 
 namespace FB {
     namespace ActiveX {
-        FB_FORWARD_PTR(ActiveXBrowserHost);
+
+        FB_FORWARD_PTR(ActiveXD3d10Helper);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// @class  ActiveXBrowserHost
+        /// @class  ActiveXAsyncDrawingService
         ///
-        /// @brief  Provides a BrowserHost implementation for ActiveX
+        /// @brief  Provides a AsyncDrawingService implementation for ActiveX
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-		class ActiveXAsyncDrawingService : public AsyncDrawingService
-		{
-			public:
-				ActiveXAsyncDrawingService(ActiveXBrowserHost* pActiveXBrowserHost) :  m_pActiveXBrowserHost(pActiveXBrowserHost)
-				{
-				}
-				
-				virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext) {
-					return m_pActiveXBrowserHost->beginDrawAsync(posRect, asyncDrawingContext);
-				}
+        class ActiveXAsyncDrawingService : public AsyncDrawingService
+        {
+        public:
+            ActiveXAsyncDrawingService(CComPtr<IViewObjectPresentSite> pViewObjectPresentSite, const FB::Rect &posRect);
+            virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext);
+            virtual bool endDrawAsync();
 
-				virtual bool endDrawAsync() {
-					return m_pActiveXBrowserHost->endDrawAsync();
-				}
-
-			private:
-				ActiveXBrowserHost* m_pActiveXBrowserHost;
-		};
-	}
+            ActiveXD3d10HelperPtr m_D3d10Helper;
+        };
+    }
 }
 #endif // H_ACTIVEXASYNCDRAWINGSERVICE
