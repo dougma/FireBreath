@@ -42,10 +42,6 @@ void NpapiAsyncDrawingHelper::freeResources()
 			backBuffer = NULL;
 		}
 	}
-
-#ifdef _WINDOWS
-	D3d10Helper::freeResources();
-#endif
 }
 
 NPError NpapiAsyncDrawingHelper::setAsyncDrawingWindow(NPWindow* newWindow)
@@ -66,7 +62,7 @@ NPError NpapiAsyncDrawingHelper::setAsyncDrawingWindow(NPWindow* newWindow)
 			return NPERR_NO_ERROR;
 	}
 
-	releaseBuffers();
+//	releaseBuffers();
 	
 	if (frontBuffer) {
 		browserHost->FinalizeAsyncSurface(frontBuffer);
@@ -99,7 +95,7 @@ NPError NpapiAsyncDrawingHelper::setAsyncDrawingWindow(NPWindow* newWindow)
 	browserHost->InitAsyncSurface(&size, NPImageFormatBGRA32, NULL, frontBuffer);
 	browserHost->InitAsyncSurface(&size, NPImageFormatBGRA32, NULL, backBuffer);
 
-	hr = OpenSharedResources(frontBuffer->sharedHandle, backBuffer->sharedHandle);
+	hr = openSharedResources(frontBuffer->sharedHandle, backBuffer->sharedHandle);
 	if(FAILED(hr)) {
 		FBLOG_ERROR("NpapiAsyncDrawingHelper::setAsyncDrawingWindow", "OpenSharedResources failed");
 		return NPERR_GENERIC_ERROR; 
@@ -121,4 +117,8 @@ bool NpapiAsyncDrawingHelper::endDrawAsync()
 	}
 	FBLOG_INFO("NpapiAsyncDrawingHelper::endDrawAsync", "D3d10Helper::endDrawAsync failed");
 	return false;
+}
+
+void NpapiAsyncDrawingHelper::resized(uint32_t width, uint32_t height)
+{
 }

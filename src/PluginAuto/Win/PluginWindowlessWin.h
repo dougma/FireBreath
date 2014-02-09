@@ -62,7 +62,6 @@ namespace FB {
 
             FB::Rect getWindowPosition() const;
             void setWindowPosition(int32_t x, int32_t y, uint32_t width, uint32_t height);
-            void setWindowPosition(FB::Rect pos);
 
             FB::Rect getWindowClipping() const;
             void setWindowClipping(int32_t top, int32_t left, int32_t bottom, int32_t right);
@@ -87,8 +86,8 @@ namespace FB {
 	        DrawingModel getDrawingModel() const { return m_drawingModel; }
 	        void setDrawingModel(DrawingModel drawingModel) { m_drawingModel = drawingModel; }
 
-			void setPlatformAsyncDrawingService(FB::AsyncDrawingService *ptr);
-			FB::AsyncDrawingService *getPlatformAsyncDrawingService() { return m_pPlatformAsyncDrawingService.get(); }
+            void setPlatformAsyncDrawingService(FB::AsyncDrawingServicePtr p) { m_pPlatformAsyncDrawingService = p; }
+			FB::AsyncDrawingServicePtr getPlatformAsyncDrawingService() { return m_pPlatformAsyncDrawingService; }
 
         protected:
             HDC m_hdc;
@@ -99,7 +98,7 @@ namespace FB {
             InvalidateWindowFunc m_invalidateWindow;
 
 			DrawingModel m_drawingModel;
-			boost::scoped_ptr<FB::AsyncDrawingService> m_pPlatformAsyncDrawingService;
+            FB::AsyncDrawingServicePtr m_pPlatformAsyncDrawingService;
     };    
 };
 

@@ -19,15 +19,12 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #include "win_common.h"
 #include <mshtml.h> // IViewObjectPresentSite, ISurfacePresenter
 #include "APITypes.h"
-#include "FBPointers.h"
 
 #include "Win/D3d10Helper.h"
 
 namespace FB {
 
     namespace ActiveX {
-
-        FB_FORWARD_PTR(ActiveXD3d10Helper);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// @class  ActiveXD3d10Helper
@@ -38,21 +35,19 @@ namespace FB {
             public FB::D3d10Helper
         {
         public:
-            ActiveXD3d10Helper(CComPtr<IViewObjectPresentSite> pViewObjectPresentSite, const FB::Rect &posRect);
+            ActiveXD3d10Helper(IViewObjectPresentSite*);
 
-            virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext);
+            virtual bool beginDrawAsync(void **asyncDrawingContext);
             virtual bool endDrawAsync();
-            virtual void freeResources();  // this must be called instead of destructor!
 
         protected:
-            HRESULT _renewAsyncDrawing(const FB::Rect &posRect);
+            HRESULT renewAsyncDrawing();
 
-        protected:
             CComPtr<IViewObjectPresentSite> m_pViewObjectPresentSite;
             CComPtr<ISurfacePresenter> m_pSurfacePresenter;
 
             int m_currentBufferIndex;
-            FB::Rect m_posRect;
+            unsigned m_width, m_height;
         };
     }
 }

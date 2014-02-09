@@ -19,27 +19,38 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #include <atlbase.h>
 #include <mshtml.h>
 #include "APITypes.h"
-#include "FBPointers.h"
 #include "AsyncDrawingService.h"
+#include "Win\D3d10Helper.h"
 
 namespace FB {
     namespace ActiveX {
 
-        FB_FORWARD_PTR(ActiveXD3d10Helper);
+        FB_FORWARD_PTR(ActiveXAsyncDrawingService);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// @class  ActiveXAsyncDrawingService
         ///
         /// @brief  Provides a AsyncDrawingService implementation for ActiveX
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        class ActiveXAsyncDrawingService : public AsyncDrawingService
+        class ActiveXAsyncDrawingService : public D3d10Helper
         {
         public:
-            ActiveXAsyncDrawingService(CComPtr<IViewObjectPresentSite> pViewObjectPresentSite, const FB::Rect &posRect);
-            virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext);
-            virtual bool endDrawAsync();
+            typedef boost::function<bool(ID3D10Device1*, ID3D10RenderTargetView*, uint32_t, uint32_t)> RenderCallback;
 
-            ActiveXD3d10HelperPtr m_D3d10Helper;
+            ActiveXAsyncDrawingService(FB::BrowserHostPtr host, IViewObjectPresentSite*);
+            virtual void resized(uint32_t width, uint32_t height);
+            void render(RenderCallback cb);
+
+        private:
+            void present(bool init);
+
+            BrowserHostWeakPtr m_host;
+            CComPtr<IViewObjectPresentSite> m_pViewObjectPresentSite;
+            CComPtr<ISurfacePresenter> m_pSurfacePresenter;
+            CComPtr<ID3D10Texture2D> m_pBackBuffer;
+            boost::mutex m_mut;
+            boost::condition_variable m_cond;
+            uint32_t m_width, m_height;
         };
     }
 }

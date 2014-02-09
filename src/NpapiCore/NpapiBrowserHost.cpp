@@ -958,14 +958,14 @@ NPError NpapiBrowserHost::_setAsyncDrawingWindow(NPWindow* newWindow)
 	return m_asyncDrawingHelper->setAsyncDrawingWindow(newWindow);
 }
 
-bool NpapiBrowserHost::beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext)
+bool NpapiBrowserHost::beginDrawAsync()
 {
 	FBLOG_INFO("NpapiBrowserHost::beginDrawAsync", "entering");
 	if(!m_asyncDrawingHelper) {
 		FBLOG_ERROR("NpapiBrowserHost::beginDrawAsync", "m_asyncDrawingHelper==null");
 		return false;
 	}	
-	return m_asyncDrawingHelper->beginDrawAsync(posRect, asyncDrawingContext);
+	return m_asyncDrawingHelper->beginDrawAsync();
 }
 
 bool NpapiBrowserHost::endDrawAsync()

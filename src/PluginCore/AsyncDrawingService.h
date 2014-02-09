@@ -16,8 +16,13 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #ifndef H_FB_ASYNCDRAWINGSERVICE
 #define H_FB_ASYNCDRAWINGSERVICE
 
+#include "FBPointers.h"
+#include "boost/enable_shared_from_this.hpp"
+
 namespace FB {
     struct Rect;
+
+    FB_FORWARD_PTR(AsyncDrawingService);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// @class  AsyncDrawingService
@@ -26,11 +31,13 @@ namespace FB {
     ///
     /// This is the base class for all asynchronous drawing services that are used in the plugin.  
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    class AsyncDrawingService
+    class AsyncDrawingService : 
+        public boost::enable_shared_from_this<AsyncDrawingService>
     {
     public:
         virtual ~AsyncDrawingService() {};
-        virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext) = 0;
+        virtual void resized(uint32_t width, uint32_t height) = 0;
+        virtual bool beginDrawAsync() = 0;
         virtual bool endDrawAsync() = 0;
     };
 };

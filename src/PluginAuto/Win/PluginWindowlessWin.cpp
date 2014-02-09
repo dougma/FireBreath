@@ -153,11 +153,13 @@ void PluginWindowlessWin::setWindowPosition(int32_t x, int32_t y, uint32_t width
     m_width = width;
 
     if (changed) {
+        m_pPlatformAsyncDrawingService->resized(width, height);
         ResizedEvent ev;
         SendEvent(&ev);  //notify the plugin the window has changed position/size
     }
 }
 
+/*
 void PluginWindowlessWin::setWindowPosition(FB::Rect pos) {
     bool changed = pos.left != m_x || pos.top != m_y || pos.bottom - pos.top != m_height || pos.right - pos.left != m_width;
 
@@ -171,6 +173,7 @@ void PluginWindowlessWin::setWindowPosition(FB::Rect pos) {
         SendEvent(&ev);  //notify the plugin the window has changed position/size
     }
 }
+*/
 
 FB::Rect FB::PluginWindowlessWin::getWindowClipping() const {
     FB::Rect r = { m_clipTop, m_clipLeft, m_clipBottom, m_clipRight };
@@ -195,9 +198,4 @@ void FB::PluginWindowlessWin::InvalidateWindow() const
 {
     if (m_invalidateWindow)
         m_invalidateWindow(0, 0, getWindowWidth(), getWindowHeight());
-}
-
-void PluginWindowlessWin::setPlatformAsyncDrawingService(FB::AsyncDrawingService *ptr) 
-{
-    m_pPlatformAsyncDrawingService.reset(ptr);
 }

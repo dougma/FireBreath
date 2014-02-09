@@ -62,7 +62,7 @@ namespace FB {
 		void _freeAsyncDrawingResources();
 		NPError _setAsyncDrawingWindow(NPWindow* newWindow);
 		
-		virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext);
+		virtual bool beginDrawAsync();
 		virtual bool endDrawAsync();
 
     public:

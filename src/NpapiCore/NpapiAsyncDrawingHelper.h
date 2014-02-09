@@ -49,6 +49,7 @@ namespace FB { namespace Npapi {
 		NpapiAsyncDrawingHelper(NpapiBrowserHost *theBrowserHost, NpAsyncDrawing mode);		
 		virtual ~NpapiAsyncDrawingHelper();
 
+        virtual void resized(uint32_t width, uint32_t height);
 		virtual bool endDrawAsync();
 		virtual void freeResources();  // this must be called instead of destructor!
 

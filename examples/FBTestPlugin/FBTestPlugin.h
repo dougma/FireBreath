@@ -16,7 +16,9 @@
 #include "PluginEvents/AttachedEvent.h"
 
 #include "PluginCore.h"
+#include "AsyncDrawingService.h"
 #include "PluginWindow.h"
+#include "Win/D3d10DrawingContext.h"
 
 
 class FBTestPlugin : public FB::PluginCore
@@ -29,6 +31,7 @@ public:
     virtual ~FBTestPlugin();
 
     virtual FB::JSAPIPtr createJSAPI();
+    virtual void ClearWindow();
     
     std::string getPluginPath() { return m_filesystemPath; }
 
@@ -53,11 +56,14 @@ public:
     /** END EVENTDEF -- DON'T CHANGE THIS LINE **/
 
   private:
-    bool drawAsync(FB::PluginWindow* win, FB::Rect pos);
+    bool startDrawAsync(FB::PluginWindow* win);
+    void renderThread(FB::PluginWindow* win);
+    bool render(ID3D10Device1*, ID3D10RenderTargetView*);
 
     uint32_t asyncTestBgColor();
     std::string m_mimetype;
     boost::optional<uint32_t> m_asyncTestBgColor;
+    boost::thread m_thread;
 };
 
 #endif

@@ -21,6 +21,7 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include "win_targetver.h"
 #include <atlctl.h>
 #include <ShlGuid.h>
+#include <mshtml.h>
 #include <boost/cast.hpp>
 #include <boost/scoped_array.hpp>
 #include "DOM/Window.h"
@@ -90,7 +91,7 @@ namespace FB {
 
             ActiveXBrowserHostPtr m_host;
             bool m_setReadyDone;
-			CComQIPtr<IViewObjectPresentSite, &IID_IViewObjectPresentSite> m_spIViewObjectPresentSite;
+            CComPtr<IViewObjectPresentSite> m_viewObjectPresentSite;
 
         protected:
 
@@ -294,11 +295,12 @@ namespace FB {
                 return hr;
             }
 
+            pClientSite->QueryInterface(IID_IViewObjectPresentSite, (void **) &m_viewObjectPresentSite);
+
             m_serviceProvider = pClientSite;
             if (!m_serviceProvider)
                 return E_FAIL;
             m_serviceProvider->QueryService(SID_SWebBrowserApp, IID_IWebBrowser2, reinterpret_cast<void**>(&m_webBrowser));
-			hr = m_serviceProvider->QueryInterface(IID_IViewObjectPresentSite, (void **) &m_spIViewObjectPresentSite);
             m_serviceProvider.Release();
 
             if (m_webBrowser) {
@@ -345,23 +347,25 @@ namespace FB {
                 ptr->setInvalidateWindowFunc(boost::bind(&CFBControlX::invalidateWindow, this, _1, _2, _3, _4));
                 if (m_spInPlaceSite) {
                     HWND hwnd = 0;
-                    HRESULT hr2 = m_spInPlaceSite->GetWindow(&hwnd);
-                    if (SUCCEEDED(hr2)) {
+                    HRESULT hr = m_spInPlaceSite->GetWindow(&hwnd);
+                    if (SUCCEEDED(hr)) {
                         ptr->setHWND(hwnd);
                     }
-                    HRESULT res = S_FALSE;
-                    if (pluginMain->asyncDrawing() == FB::AD_DXGI && m_spIViewObjectPresentSite) {
-                        FB::Rect posRect;
-                        posRect.bottom = prcPosRect->bottom;
-                        posRect.left = prcPosRect->left;
-                        posRect.right = prcPosRect->right;
-                        posRect.top = prcPosRect->top;
 
-                        ptr->setPlatformAsyncDrawingService(new ActiveXAsyncDrawingService(m_spIViewObjectPresentSite, posRect));
-                        ptr->setDrawingModel(FB::PluginWindow::DrawingModelActiveXSurfacePresenter);
-                    } else {
-                        ptr->setPlatformAsyncDrawingService(NULL);
-                        ptr->setDrawingModel(FB::PluginWindow::DrawingModelWindowless);
+                    ptr->setDrawingModel(FB::PluginWindow::DrawingModelWindowless);
+
+                    // a few things need to align
+                    if (pluginMain->asyncDrawing() == FB::AD_DXGI && m_viewObjectPresentSite && m_host)
+                    {
+                        BOOL accelEnabled = FALSE;
+                        HRESULT hr = m_viewObjectPresentSite->IsHardwareComposition(&accelEnabled);
+                        if (SUCCEEDED(hr) && accelEnabled) {
+                            hr = m_viewObjectPresentSite->SetCompositionMode(VIEW_OBJECT_COMPOSITION_MODE_SURFACEPRESENTER);
+                            if (SUCCEEDED(hr)) {
+                                ptr->setPlatformAsyncDrawingService(boost::make_shared<ActiveXAsyncDrawingService>(m_host, m_viewObjectPresentSite));
+                                ptr->setDrawingModel(FB::PluginWindow::DrawingModelActiveXSurfacePresenter);
+                            }
+                        }
                     }
 
                 }

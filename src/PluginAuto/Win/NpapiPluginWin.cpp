@@ -176,14 +176,12 @@ void NpapiPluginWin::initDrawingModel(NPWindow* window, FB::PluginWindowlessWin*
 		NPError res = m_npHost->_setAsyncDrawingWindow(window);			
 		if(res == NPERR_NO_ERROR) {
 			if(!win->getPlatformAsyncDrawingService())
-				win->setPlatformAsyncDrawingService(new NpapiAsyncDrawingService(m_npHost.get())); 
+				win->setPlatformAsyncDrawingService(boost::make_shared<NpapiAsyncDrawingService>(m_npHost.get())); 
 			if(asyncDrawingMode == AD_BITMAP) {
 				drawingModel = FB::PluginWindow::DrawingModelNpapiAsyncBitmap;
 			} else {
 				drawingModel = FB::PluginWindow::DrawingModelNpapiAsyncDXGI;
 			}
-		} else {
-			win->setPlatformAsyncDrawingService(NULL);
 		}
 		win->setDrawingModel(drawingModel);
 	}

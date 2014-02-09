@@ -19,110 +19,119 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 
 using namespace FB;
 
-D3d10Helper::D3d10Helper() : m_device(NULL), m_frontBuffer(NULL), m_backBuffer(NULL)
-{ 
+
+//----------------------------------------------------------------------------------------------- 
+// D3D10 functions
+//
+
+typedef HRESULT (WINAPI*D3D10CreateDevice1Func)(
+    IDXGIAdapter *pAdapter,
+    D3D10_DRIVER_TYPE DriverType,
+    HMODULE Software,
+    UINT Flags,
+    D3D10_FEATURE_LEVEL1 HardwareLevel,
+    UINT SDKVersion,
+    ID3D10Device1 **ppDevice
+    );
+
+typedef HRESULT(WINAPI*CreateDXGIFactory1Func)(
+    REFIID riid,
+    void **ppFactory
+    );
+
+static HRESULT getD3D10Device(ID3D10Device1** returnedDevice)
+{
+    HRESULT hr = S_FALSE;
+
+    HMODULE d3d10module = LoadLibraryA("d3d10_1.dll");
+    if(!d3d10module) {
+        FBLOG_ERROR("getD3D10Device", "LoadLibraryA d3d10_1.dll failed");
+        return hr;
+    }	
+
+    D3D10CreateDevice1Func createD3DDevice = (D3D10CreateDevice1Func)GetProcAddress(d3d10module, "D3D10CreateDevice1");
+    if (createD3DDevice) {
+        HMODULE dxgiModule = LoadLibraryA("dxgi.dll");
+        CreateDXGIFactory1Func createDXGIFactory1 = (CreateDXGIFactory1Func)GetProcAddress(dxgiModule, "CreateDXGIFactory1");
+
+        // Try to use a DXGI 1.1 adapter in order to share resources across processes.
+        IDXGIAdapter1 *adapter1;
+        if (createDXGIFactory1) {
+            IDXGIFactory1 *factory1;
+            hr = createDXGIFactory1(__uuidof(IDXGIFactory1),(void**)&factory1);
+
+            if (FAILED(hr) || !factory1) {
+                FBLOG_ERROR("getD3D10Device", "createDXGIFactory1 failed");
+                return hr;
+            }
+
+            hr = factory1->EnumAdapters1(0, &adapter1);
+            if (FAILED(hr) || !adapter1) {
+                FBLOG_ERROR("getD3D10Device", "EnumAdapters1 failed");
+                return hr;
+            }
+
+            hr = adapter1->CheckInterfaceSupport(__uuidof(ID3D10Device), NULL);
+            if (FAILED(hr)) {
+                adapter1 = NULL;
+                FBLOG_ERROR("getD3D10Device", "CheckInterfaceSupport failed");
+                factory1->Release();
+                return hr;
+            }
+            factory1->Release();
+        } else {
+            FBLOG_ERROR("getD3D10Device", "GetProcAddress CreateDXGIFactory1 failed");
+            return hr;
+        }
+
+        hr = createD3DDevice(
+            adapter1, 
+            D3D10_DRIVER_TYPE_HARDWARE,
+            NULL,
+            D3D10_CREATE_DEVICE_BGRA_SUPPORT |
+            D3D10_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS,
+            D3D10_FEATURE_LEVEL_10_0,
+            D3D10_1_SDK_VERSION,
+            returnedDevice);
+
+        adapter1->Release();
+    } else {
+        FBLOG_ERROR("getD3D10Device", "GetProcAddress D3D10CreateDevice1 failed");
+    }
+
+    return hr;
 }
 
-D3d10Helper::~D3d10Helper() 
+D3d10Helper::~D3d10Helper()
 {
-}	
+    if (m_device) {
+        m_device->ClearState();
+    }
+}
 
 HRESULT D3d10Helper::initDevice()
 {
-	if(m_device)
-		return S_OK;
-
-	HRESULT hr = getD3D10Device(&m_device);
-	return hr;
+    return m_device ? S_OK : getD3D10Device(&m_device);
 }
 
-HRESULT D3d10Helper::OpenSharedResources(HANDLE hFrontBufferSharedHandle, HANDLE hBackBufferSharedHandle) 
+HRESULT D3d10Helper::openSharedResources(HANDLE hFrontBufferSharedHandle, HANDLE hBackBufferSharedHandle) 
 {
-	HRESULT hr;
-	if(!m_device)
-		return S_FALSE;
-	hr = m_device->OpenSharedResource(hFrontBufferSharedHandle, __uuidof(ID3D10Texture2D), (void**)&m_frontBuffer);
-	if(SUCCEEDED(hr)) {
-		hr = m_device->OpenSharedResource(hBackBufferSharedHandle, __uuidof(ID3D10Texture2D), (void**)&m_backBuffer);
-	}
-	return hr;
+    if (!m_device)
+        return S_FALSE;
+
+    HRESULT hr = m_device->OpenSharedResource(hFrontBufferSharedHandle, __uuidof(ID3D10Texture2D), (void**)&m_buffer[0]);
+    if (SUCCEEDED(hr)) {
+        hr = m_device->OpenSharedResource(hBackBufferSharedHandle, __uuidof(ID3D10Texture2D), (void**)&m_buffer[1]);
+    }
+    return hr;
 }
 
-bool D3d10Helper::beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext)
+bool D3d10Helper::beginDrawAsync()
 {
-	FBLOG_INFO("D3d10Helper::beginDrawAsync", "entering");
-
-	if(!m_device) {
-		FBLOG_INFO("D3d10Helper::beginDrawAsync", "m_device==null");
-		return false;
-	}
-
-	if(!m_backBuffer) {
-		FBLOG_INFO("D3d10Helper::beginDrawAsync", "m_backBuffer==null");
-		return false;
-	}
-
-	IDXGIKeyedMutex *mutex;
-	m_backBuffer->QueryInterface(&mutex);
-
-	mutex->AcquireSync(0, INFINITE);
-	assert(mutex);
-	if(!mutex)
-		return false;
-	ID3D10RenderTargetView *rtView;
-	m_device->CreateRenderTargetView(m_backBuffer, NULL, &rtView);
-	assert(rtView);
-	if(!rtView)
-		return false;
-
-	m_D3d10DrawingContext.dev = m_device;
-	m_D3d10DrawingContext.rtView = rtView;
-	m_D3d10DrawingContext.mutex = mutex;
-
-	*asyncDrawingContext = (void *)&m_D3d10DrawingContext;
-	FBLOG_INFO("D3d10Helper::beginDrawAsync", "done");
-	return true;
+    return false;
 }
 
 bool D3d10Helper::endDrawAsync()
 {
-	FBLOG_INFO("D3d10Helper::endDrawAsync", "entering");
-
-	m_D3d10DrawingContext.rtView->Release();
-	m_D3d10DrawingContext.mutex->ReleaseSync(0);
-	m_D3d10DrawingContext.mutex->Release();
-
-	m_D3d10DrawingContext.dev = NULL;
-	m_D3d10DrawingContext.mutex = NULL;
-	m_D3d10DrawingContext.rtView = NULL;
-
-	ID3D10Texture2D *oldFrontT = m_frontBuffer;
-	m_frontBuffer = m_backBuffer;
-	m_backBuffer = oldFrontT;
-
-	FBLOG_INFO("D3d10Helper::endDrawAsync", "done");
-	return true;
-}
-
-void D3d10Helper::releaseBuffers() 
-{
-	if (m_frontBuffer) {
-		m_frontBuffer->Release();
-		m_frontBuffer = NULL;
-	}
-	if (m_backBuffer) {
-		m_backBuffer->Release();
-		m_backBuffer = NULL;
-	}
-}
-
-void D3d10Helper::freeResources()
-{
-	FBLOG_INFO("D3d10Helper::freeResources", "release D3D10 resources");
-	releaseBuffers();
-
-	if (m_device) {
-		m_device->ClearState();
-		m_device = NULL;
-	}
+    return false;
 }

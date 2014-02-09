@@ -29,9 +29,13 @@ namespace FB {
 			{
 			}
 
-			virtual bool beginDrawAsync(const FB::Rect &posRect, void **asyncDrawingContext)
+            virtual void resized(uint32_t width, uint32_t height)
+            {
+            }
+
+			virtual bool beginDrawAsync()
 			{
-				return m_pNpapiBrowserHost->beginDrawAsync(posRect, asyncDrawingContext);
+				return m_pNpapiBrowserHost->beginDrawAsync();
 			}
 
 			virtual bool endDrawAsync()

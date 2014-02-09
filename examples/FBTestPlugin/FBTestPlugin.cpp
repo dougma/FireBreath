@@ -8,10 +8,11 @@
 \**********************************************************/
 
 #include <sstream>
+#include <stdio.h>
+#include "boost/bind.hpp" 
+
 #include "FBTestPluginAPI.h"
 #include "SimpleMathAPI.h"
-#include <stdio.h>
-
 #include "FBTestPlugin.h"
 #include "DOM/Window.h"
 #include "URI.h"
@@ -20,7 +21,7 @@
 #include <mshtml.h>
 #include "PluginWindowWin.h"
 #include "PluginWindowlessWin.h"
-#include "Win/D3d10DrawingContext.h"
+#include "ActiveXAsyncDrawingService.h"
 #endif
 
 void FBTestPlugin::StaticInitialize()
@@ -94,9 +95,12 @@ bool FBTestPlugin::onMouseMove(FB::MouseMoveEvent *evt, FB::PluginWindow*)
     return false;
 }
 
-bool FBTestPlugin::onAttached( FB::AttachedEvent *evt, FB::PluginWindow* )
+bool FBTestPlugin::onAttached( FB::AttachedEvent *evt, FB::PluginWindow* win)
 {
     // This is called when the window is attached; don't start drawing before this!
+    if (win && win->getDrawingModel() == FB::PluginWindow::DrawingModelActiveXSurfacePresenter) {
+        startDrawAsync(win);
+    }
     return false;
 }
 
@@ -121,11 +125,13 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
         if (drawingModel == FB::PluginWindow::DrawingModelActiveXSurfacePresenter ||
             drawingModel == FB::PluginWindow::DrawingModelNpapiAsyncDXGI) 
         {
+#if 0
             FBLOG_INFO("FBTestPlugin::draw", "calling drawAsync().  win: " << win << "; pos: " << pos.left << "," << pos.top);
-            if (drawAsync(win, pos)) {
+            if (startDrawAsync(win, pos)) {
                 return true;
             }
             wndLess->setDrawingModel(FB::PluginWindow::DrawingModelWindowless); // oh oh: in npapi you can call the function to set this only during Initialization TBD!
+#endif
         }
 
         hDC = wndLess->getHDC();
@@ -154,52 +160,60 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
     return true;
 }
 
-bool FBTestPlugin::drawAsync(FB::PluginWindow* win, FB::Rect pos)
+//////////////////
+
+#include "Scene.h"
+
+//////////////////
+
+void FBTestPlugin::renderThread(FB::PluginWindow *win)
 {
-#if FB_WIN
-    FBLOG_INFO("FBTestPlugin::drawAsync", "PluginCore::drawAsync() pos: " << pos.left << "," << pos.top );
-
     FB::PluginWindowlessWin *wndLess = dynamic_cast<FB::PluginWindowlessWin*>(win);
-    if(wndLess == NULL)
-        return false;
+    if (!wndLess)
+        return;
 
-    FB::AsyncDrawingService *drawingService;
-    drawingService = dynamic_cast<FB::AsyncDrawingService *>(wndLess->getPlatformAsyncDrawingService());
+    FB::ActiveX::ActiveXAsyncDrawingServicePtr axds = 
+        FB::ptr_cast<FB::ActiveX::ActiveXAsyncDrawingService>(wndLess->getPlatformAsyncDrawingService());
+    if (!axds)
+        return;
 
-    if(!drawingService)
-        return false;
-
-    void *asyncDrawingContext;
-    FB::D3d10DrawingContext *drawingContext;
-
-    FBLOG_INFO("FBTestPlugin::drawAsync", "calling beginDrawAsync...");
-    if(drawingService->beginDrawAsync(pos, &asyncDrawingContext)==false)
-        return false;
-
-    drawingContext = reinterpret_cast<FB::D3d10DrawingContext *>(asyncDrawingContext);
-    if(drawingContext == NULL)
-        return false;
-
-    uint32_t rgba = asyncTestBgColor();
-
-    unsigned char subpixels[4];
-    subpixels[0] = rgba & 0xFF;
-    subpixels[1] = (rgba & 0xFF00) >> 8;
-    subpixels[2] = (rgba & 0xFF0000) >> 16;
-    subpixels[3] = (rgba & 0xFF000000) >> 24;
-
-    float color[4];
-    color[2] = float(subpixels[3] * subpixels[0]) / 0xFE01;
-    color[1] = float(subpixels[3] * subpixels[1]) / 0xFE01;
-    color[0] = float(subpixels[3] * subpixels[2]) / 0xFE01;
-    color[3] = float(subpixels[3]) / 0xFF;
-    drawingContext->dev->ClearRenderTargetView(drawingContext->rtView, color);
-
-    FBLOG_INFO("FBTestPlugin::drawAsync", "calling endDrawAsync...");
-    if(!drawingService->endDrawAsync()) {
-        return false;
+    try {
+        Scene scene(asyncTestBgColor(), FB::utf8_to_wstring(getFSPath()));
+        do {
+            axds->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
+        } while(true);
     }
-#endif    
+    catch (const std::exception& e) {
+    }
+    catch (boost::thread_interrupted) {
+    }
+    catch (...) {
+    }
+}
+
+void FBTestPlugin::onPluginReady()
+{
+    FB::DOM::WindowPtr window = m_host->getDOMWindow();
+    if (!window)
+        return;
+
+    FB::URI uri = FB::URI::fromString(window->getLocation());
+    bool log = uri.query_data.find("log") != uri.query_data.end();
+    m_host->setEnableHtmlLog(log);
+}
+
+//virtual
+void FBTestPlugin::ClearWindow()
+{
+    // the window is about to go away, so we need to stop our render thread
+    m_thread.interrupt();
+    m_thread.join();
+}
+
+bool FBTestPlugin::startDrawAsync(FB::PluginWindow* win)
+{
+    m_thread = boost::thread(&FBTestPlugin::renderThread, this, win);
     return true;
 }
 
@@ -226,13 +240,3 @@ uint32_t FBTestPlugin::asyncTestBgColor()
     return *m_asyncTestBgColor;
 }
 
-void FBTestPlugin::onPluginReady()
-{
-    FB::DOM::WindowPtr window = m_host->getDOMWindow();
-    if (!window)
-        return;
-
-    FB::URI uri = FB::URI::fromString(window->getLocation());
-    bool log = uri.query_data.find("log") != uri.query_data.end();
-    m_host->setEnableHtmlLog(log);
-}
