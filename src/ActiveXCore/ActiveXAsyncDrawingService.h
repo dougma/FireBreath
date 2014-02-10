@@ -47,11 +47,12 @@ namespace FB {
             BrowserHostWeakPtr m_host;
             CComPtr<IViewObjectPresentSite> m_pViewObjectPresentSite;
             CComPtr<ISurfacePresenter> m_pSurfacePresenter;
-            CComPtr<ID3D10Texture2D> m_pBackBuffer;
+            uint32_t m_width, m_height;
+            bool m_dimsChanged;         // since last call to present()
+
             boost::mutex m_mut;
             boost::condition_variable m_cond;
-            uint32_t m_width, m_height;
-            bool m_dimsChanged;
+            CComPtr<ID3D10Texture2D> m_pBackBuffer;
         };
     }
 }

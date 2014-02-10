@@ -49,18 +49,16 @@ void ActiveXAsyncDrawingService::present(bool initOnly)
         return;
 
     if (m_pSurfacePresenter) {
-        // check for currency and reset if no longer current (we'll lose what we just rendered)
         BOOL isCurrent = 0;
         m_pSurfacePresenter->IsCurrent(&isCurrent);
-        if (isCurrent) {
+        if (!isCurrent || m_dimsChanged) {
+            // don't bother presenting, because the new 
+            // SurfacePresenter will replace it with blank
+            m_pSurfacePresenter = 0;
+        } else {
             if (!initOnly) {
                 m_pSurfacePresenter->Present(0, NULL);
             }
-            if (m_dimsChanged) {
-                m_pSurfacePresenter = 0;
-            }
-        } else {
-            m_pSurfacePresenter = 0;
         }
     } 
     
@@ -75,7 +73,6 @@ void ActiveXAsyncDrawingService::present(bool initOnly)
             FBLOG_ERROR("ActiveXD3d10Helper::_renewAsyncDrawing", "CreateSurfacePresenter failed");
             return;
         }
-        // carry on and obtain the back buffer...
     } 
 
     // send the back buffer to the render thread
