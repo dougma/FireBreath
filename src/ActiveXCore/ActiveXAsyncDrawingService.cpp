@@ -23,6 +23,7 @@ ActiveXAsyncDrawingService::ActiveXAsyncDrawingService(FB::BrowserHostPtr host, 
     : m_host(host)
     , m_pViewObjectPresentSite(vops)
     , m_width(0), m_height(0)
+    , m_dimsChanged(false)
 {
     assert(vops);
     initDevice();
@@ -30,6 +31,8 @@ ActiveXAsyncDrawingService::ActiveXAsyncDrawingService(FB::BrowserHostPtr host, 
 
 void ActiveXAsyncDrawingService::resized(uint32_t width, uint32_t height)
 {
+    m_dimsChanged = (m_width != width) || (m_height != height);
+
     uint32_t was = m_width * m_width;
     uint32_t now = width * height;
 
@@ -49,17 +52,21 @@ void ActiveXAsyncDrawingService::present(bool initOnly)
         // check for currency and reset if no longer current (we'll lose what we just rendered)
         BOOL isCurrent = 0;
         m_pSurfacePresenter->IsCurrent(&isCurrent);
-        if (!isCurrent) {
+        if (isCurrent) {
+            if (!initOnly) {
+                m_pSurfacePresenter->Present(0, NULL);
+            }
+            if (m_dimsChanged) {
+                m_pSurfacePresenter = 0;
+            }
+        } else {
             m_pSurfacePresenter = 0;
         }
-    }
-
-    if (m_pSurfacePresenter) {
-        if (!initOnly) {
-            m_pSurfacePresenter->Present(0, NULL);
-        }
-    } else {
+    } 
+    
+    if (!m_pSurfacePresenter) {
         // (re)create surface presenter
+        m_dimsChanged = false;
         UINT backBuffers = 1;
         DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM;    // IE9 only supports this one
         HRESULT hr = m_pViewObjectPresentSite->CreateSurfacePresenter(

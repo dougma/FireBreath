@@ -51,6 +51,7 @@ namespace FB {
             boost::mutex m_mut;
             boost::condition_variable m_cond;
             uint32_t m_width, m_height;
+            bool m_dimsChanged;
         };
     }
 }
