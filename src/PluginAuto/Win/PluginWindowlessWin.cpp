@@ -153,7 +153,8 @@ void PluginWindowlessWin::setWindowPosition(int32_t x, int32_t y, uint32_t width
     m_width = width;
 
     if (changed) {
-        m_pPlatformAsyncDrawingService->resized(width, height);
+        if (m_pPlatformAsyncDrawingService)
+            m_pPlatformAsyncDrawingService->resized(width, height);
         ResizedEvent ev;
         SendEvent(&ev);  //notify the plugin the window has changed position/size
     }
