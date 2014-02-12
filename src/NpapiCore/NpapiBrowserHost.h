@@ -23,7 +23,6 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include <boost/thread.hpp>
 
 #include "AsyncDrawingContext.h"
-#include "NpapiAsyncDrawingHelper.h"
 
 namespace FB {
     class BrowserStreamRequest;
@@ -54,16 +53,15 @@ namespace FB {
 
     public:
         virtual BrowserStreamPtr _createStream( const BrowserStreamRequest& req ) const;
-
         virtual BrowserStreamPtr _createUnsolicitedStream(const BrowserStreamRequest& req) const;
-	public:
-		NpAsyncDrawing getAsyncDrawingMode();
-		NPError _initAsyncDrawing(FB::Npapi::NpAsyncDrawing npAsyncDrawingMode);
-		void _freeAsyncDrawingResources();
-		NPError _setAsyncDrawingWindow(NPWindow* newWindow);
-		
-		virtual bool beginDrawAsync();
-		virtual bool endDrawAsync();
+	//public:
+		//NpAsyncDrawing getAsyncDrawingMode();
+		//NPError _initAsyncDrawing(FB::Npapi::NpAsyncDrawing npAsyncDrawingMode);
+		//void _freeAsyncDrawingResources();
+		//NPError _setAsyncDrawingWindow(NPWindow* newWindow);
+		//
+		//virtual bool beginDrawAsync();
+		//virtual bool endDrawAsync();
 
     public:
         virtual bool _scheduleAsyncCall(void (*func)(void *), void *userData) const;
@@ -103,8 +101,8 @@ namespace FB {
         typedef std::map<void*, NPObjectWeakRef> NPObjectRefMap;
         mutable NPObjectRefMap m_cachedNPObject;
 
-	protected:
-		NpapiAsyncDrawingHelperPtr m_asyncDrawingHelper;		
+//	protected:
+//		NpapiAsyncDrawingHelperPtr m_asyncDrawingHelper;		
 
     public:
         void* MemAlloc(uint32_t size) const;

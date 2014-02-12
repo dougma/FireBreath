@@ -29,12 +29,12 @@ using boost::assign::list_of;
 
 namespace FB {
 
-	typedef enum {
-	  AD_NOT_SET = -1,
-	  AD_NONE,
-	  AD_BITMAP,
-	  AD_DXGI
-	} AsyncDrawing;
+    enum AsyncDrawing {
+        AD_NOT_SET = -1,
+        AD_NONE,
+        AD_BITMAP,
+        AD_DXGI
+    };
 
     class PluginWindow;
     class PluginEvent;

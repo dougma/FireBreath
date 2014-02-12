@@ -44,9 +44,7 @@ namespace FB {
         NPError SetWindow(NPWindow* window);
         int16_t HandleEvent(void* event);
 
-	protected:
-		void initDrawingModel(NPWindow* window, FB::PluginWindowlessWin* win);
-	};
+    };
 }; }; // FB::Npapi
 
 #endif

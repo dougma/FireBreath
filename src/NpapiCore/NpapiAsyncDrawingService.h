@@ -18,33 +18,25 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 
 #include "NpapiTypes.h"
 #include "NpapiBrowserHost.h"
+#include "Win/D3d10Helper.h"
 
-namespace FB {   
-    namespace Npapi {
+namespace FB {
+namespace Npapi {
 
-	class NpapiAsyncDrawingService : public AsyncDrawingService
-	{
-		public:
-			NpapiAsyncDrawingService(NpapiBrowserHost* pNpapiBrowserHost) : m_pNpapiBrowserHost(pNpapiBrowserHost) 
-			{
-			}
+    class NpapiAsyncDrawingService : public D3d10Helper
+    {
+    public:
+        NpapiAsyncDrawingService(FB::BrowserHostPtr host);
 
-            virtual void resized(uint32_t width, uint32_t height)
-            {
-            }
+        virtual void resized(uint32_t width, uint32_t height);
+        virtual bool beginDrawAsync();
+        virtual bool endDrawAsync();
 
-			virtual bool beginDrawAsync()
-			{
-				return m_pNpapiBrowserHost->beginDrawAsync();
-			}
+    private:
+        FB::BrowserHostWeakPtr m_host;
+    };
 
-			virtual bool endDrawAsync()
-			{
-				return m_pNpapiBrowserHost->endDrawAsync();
-			}
-		private:
-			NpapiBrowserHost* m_pNpapiBrowserHost;
-	};
-}; }; // FB::Npapi
+};
+}; // FB::Npapi
 
 #endif

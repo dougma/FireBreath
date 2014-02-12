@@ -51,13 +51,6 @@ namespace FB { namespace Npapi {
     typedef FB::FBNull NpapiNull;
     typedef FB::FBVoid NpapiVoid;
 
-	enum NpAsyncDrawing {
-	  AD_NOT_SET = -1,
-	  AD_NONE,
-	  AD_BITMAP,
-	  AD_DXGI
-	};
-
 }; };
 
 #endif

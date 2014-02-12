@@ -874,34 +874,7 @@ void NpapiBrowserHost::SetCurrentAsyncSurface(NPAsyncSurface *surface, NPRect *c
     }
 }
 
-//----------------------------------------------------------------------------------------------- 
-// AsyncDrawing support
-//
-static bool pluginSupportsAsyncBitmapDrawing()
-{
-	return false; // TBD normaly should be true. I simply did not implement this mode. gg
-}
-
-/**
- * Returns true if the plugin supports DXGI bitmap drawing.
- */
-static bool pluginSupportsAsyncDXGIDrawing()
-{
-#ifdef XP_WIN
-  return true;
-#else
-  return false;
-#endif
-}
-
-NpAsyncDrawing NpapiBrowserHost::getAsyncDrawingMode()
-{
-	if(m_asyncDrawingHelper) {
-		return m_asyncDrawingHelper->getAsyncDrawingMode();
-	}
-	return AD_NONE;
-}
-
+/*
 NPError NpapiBrowserHost::_initAsyncDrawing(NpAsyncDrawing npAsyncDrawingMode)
 {
 	NPError res;
@@ -937,6 +910,7 @@ NPError NpapiBrowserHost::_initAsyncDrawing(NpAsyncDrawing npAsyncDrawingMode)
 
 	return NPERR_NO_ERROR;
 }
+
 
 void NpapiBrowserHost::_freeAsyncDrawingResources()
 {
@@ -977,7 +951,4 @@ bool NpapiBrowserHost::endDrawAsync()
 	}	
 	return m_asyncDrawingHelper->endDrawAsync();
 }
-
-//
-// AsyncDrawing support
-//----------------------------------------------------------------------------------------------- 
+*/
