@@ -355,7 +355,11 @@ namespace FB {
                     ptr->setDrawingModel(FB::PluginWindow::DrawingModelWindowless);
 
                     // a few things need to align
-                    if (pluginMain->asyncDrawing() == FB::AD_DXGI && m_viewObjectPresentSite && m_host)
+                    boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
+                    if (param &&
+                        0 == strcmp(param->c_str(), "SurfacePresenter") &&
+                        m_viewObjectPresentSite &&
+                        m_host)
                     {
                         BOOL accelEnabled = FALSE;
                         HRESULT hr = m_viewObjectPresentSite->IsHardwareComposition(&accelEnabled);

@@ -13,6 +13,7 @@ Copyright 2009 PacketPass, Inc and the Firebreath development team
 \**********************************************************/
 
 #include <boost/make_shared.hpp>
+#include <boost/algorithm/string.hpp>
 #include "win_common.h"
 #include "NpapiTypes.h"
 #include "PluginCore.h"
@@ -46,27 +47,49 @@ NpapiPluginWin::~NpapiPluginWin()
     delete pluginWin; pluginWin = NULL;
 }
 
+
+struct DrawingModel {
+    const char* name;
+    NPNVariable query;
+    NPDrawingModel model;
+};
+
+#define DRAWING_MODEL(x) { #x, NPNVsupports##x##Bool, NPDrawingModel##x }
+#define DRAWING_MODEL_FBLEGACYNAME(x) { "NPDrawingModel"#x, NPNVsupports##x##Bool, NPDrawingModel##x }
+#define END_LIST { 0, (NPNVariable) 0, (NPDrawingModel) 0 }
+
+static const DrawingModel s_models[] = {
+    DRAWING_MODEL(AsyncBitmapSurface),
+    DRAWING_MODEL(AsyncWindowsDXGISurface),
+    END_LIST
+};
+
+
 void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], char *argv[]) 
 {
     NpapiPlugin::init(pluginType, argc, argn, argv);
 
-    // todo: make this more like the NpapiPluginMac::init, including: 
-    //      use "drawingmodel" attribute
-    //      create different window types
-    //
-    AsyncDrawing mode = pluginMain->asyncDrawing(); // the user-requested drawing model
-    if (mode == AD_DXGI || mode == AD_BITMAP)
-    {
-        NPNVariable query = AD_DXGI ? NPNVsupportsAsyncWindowsDXGISurfaceBool : NPNVsupportsAsyncBitmapSurfaceBool;
-        NPDrawingModel model = AD_DXGI ? NPDrawingModelAsyncWindowsDXGISurface : NPDrawingModelAsyncBitmapSurface;
-        NPBool supported = false;
-        int res = m_npHost->GetValue(query, &supported);
-        if (NPERR_NO_ERROR == res && supported) {
-            res = m_npHost->SetValue(NPPVpluginDrawingModel, (void*) model);
-            if (NPERR_NO_ERROR == res) {
-                int ii = 0;
+    // todo: move this to base class
+    boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
+    if (param) {
+        using namespace boost::algorithm;
+        std::vector<std::string> prefs;
+        split(prefs, *param, !is_alnum());
+
+        bool gotone = false;
+        for (size_t i = 0; !gotone && i < prefs.size(); i++) {
+            NPBool supported = false;
+            const DrawingModel* dm = &s_models[0];
+            while (dm->name && strcmp(prefs[i].c_str(), dm->name)) dm++;
+            if (dm->name &&
+                NPERR_NO_ERROR == m_npHost->GetValue(dm->query, &supported) && supported &&
+//                isDrawingModelPermitted(dm->name) &&  // virtual func, todo
+                NPERR_NO_ERROR == m_npHost->SetValue(NPPVpluginDrawingModel, (void*) dm->model))
+            {
+                gotone = true;
             }
         }
+        int ii = 0;
     }
 }
 
