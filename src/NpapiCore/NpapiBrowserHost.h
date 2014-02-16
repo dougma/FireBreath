@@ -22,8 +22,6 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include "ShareableReference.h"
 #include <boost/thread.hpp>
 
-#include "AsyncDrawingContext.h"
-
 namespace FB {
     class BrowserStreamRequest;
     namespace Npapi {
@@ -32,10 +30,8 @@ namespace FB {
     FB_FORWARD_PTR(NPObjectAPI);
     FB_FORWARD_PTR(NpapiBrowserHost);
     FB_FORWARD_PTR(NPJavascriptObject);
-    FB_FORWARD_PTR(NpapiAsyncDrawingHelper);
     typedef boost::shared_ptr<NPObjectAPI> NPObjectAPIPtr;
     typedef boost::weak_ptr<FB::ShareableReference<NPJavascriptObject> > NPObjectWeakRef;
-    typedef boost::shared_ptr<NpapiAsyncDrawingHelper> NpapiAsyncDrawingHelperPtr;    
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// @class  NpapiBrowserHost
@@ -54,14 +50,6 @@ namespace FB {
     public:
         virtual BrowserStreamPtr _createStream( const BrowserStreamRequest& req ) const;
         virtual BrowserStreamPtr _createUnsolicitedStream(const BrowserStreamRequest& req) const;
-	//public:
-		//NpAsyncDrawing getAsyncDrawingMode();
-		//NPError _initAsyncDrawing(FB::Npapi::NpAsyncDrawing npAsyncDrawingMode);
-		//void _freeAsyncDrawingResources();
-		//NPError _setAsyncDrawingWindow(NPWindow* newWindow);
-		//
-		//virtual bool beginDrawAsync();
-		//virtual bool endDrawAsync();
 
     public:
         virtual bool _scheduleAsyncCall(void (*func)(void *), void *userData) const;
@@ -100,9 +88,6 @@ namespace FB {
         mutable FB::SafeQueue<NPObject*> m_deferredObjects;
         typedef std::map<void*, NPObjectWeakRef> NPObjectRefMap;
         mutable NPObjectRefMap m_cachedNPObject;
-
-//	protected:
-//		NpapiAsyncDrawingHelperPtr m_asyncDrawingHelper;		
 
     public:
         void* MemAlloc(uint32_t size) const;
@@ -181,9 +166,9 @@ namespace FB {
         int ScheduleTimer(int interval, bool repeat, void(*func)(NPP npp, uint32_t timerID)) const;
         void UnscheduleTimer(int timerId) const;
 
-		NPError InitAsyncSurface(NPSize *size, NPImageFormat format, void *initData, NPAsyncSurface *surface) const;
-		NPError	FinalizeAsyncSurface(NPAsyncSurface *surface) const;
-		void SetCurrentAsyncSurface(NPAsyncSurface *surface, NPRect *changed) const;
+        NPError InitAsyncSurface(NPSize* size, NPImageFormat format, void* initData, NPAsyncSurface* surface) const;
+        NPError FinalizeAsyncSurface(NPAsyncSurface* surface) const;
+        void SetCurrentAsyncSurface(NPAsyncSurface* surface, NPRect* changed) const;
     };
 
     typedef boost::shared_ptr<NpapiBrowserHost> NpapiBrowserHostPtr;

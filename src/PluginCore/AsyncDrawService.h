@@ -13,25 +13,31 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 \**********************************************************/
 
 #pragma once
-#ifndef H_FB_ASYNCDRAWINGCONTEXT
-#define H_FB_ASYNCDRAWINGCONTEXT
+#ifndef H_FB_ASYNCDRAWINGSERVICE
+#define H_FB_ASYNCDRAWINGSERVICE
+
+#include "FBPointers.h"
+#include "boost/enable_shared_from_this.hpp"
 
 namespace FB {
+    struct Rect;
+
+    FB_FORWARD_PTR(AsyncDrawService);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// @class  AsyncDrawingContext
+    /// @class  AsyncDrawService
     ///
-    /// @brief  asynchronous drawing context base class. 
+    /// @brief  asynchronous drawing service base class. 
     ///
-    /// This is the base class for all asynchronous drawing contexts that are used in the plugin.  
+    /// This is the base class for all asynchronous drawing services that are used in the plugin.  
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-	class AsyncDrawingContext
+    class AsyncDrawService : 
+        public boost::enable_shared_from_this<AsyncDrawService>
     {
     public:
-        AsyncDrawingContext() { };
-        virtual ~AsyncDrawingContext() { };
+        virtual ~AsyncDrawService() {};
+        virtual void resized(uint32_t width, uint32_t height) = 0;
     };
 };
 
 #endif
-

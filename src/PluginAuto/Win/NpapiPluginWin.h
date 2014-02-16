@@ -20,7 +20,9 @@ Copyright 2009 PacketPass, Inc and the Firebreath development team
 #include "NpapiPlugin.h"
 
 namespace FB { 
-    class PluginWindow;
+
+    FB_FORWARD_PTR(PluginWindow);
+
     class PluginWindowWin;
     class PluginWindowlessWin;
 
@@ -34,7 +36,10 @@ namespace FB {
         void init(NPMIMEType pluginType, int16_t argc, char* argn[], char *argv[]);
 
     protected:
-        FB::PluginWindow *pluginWin;
+        void pluginWindowFactory(NPDrawingModel);
+
+        boost::scoped_ptr<PluginWindow> pluginWin;
+        NPDrawingModel m_drawingModel;
 
     public:
         void invalidateWindow(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom);

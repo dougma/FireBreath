@@ -21,7 +21,8 @@
 #include <mshtml.h>
 #include "PluginWindowWin.h"
 #include "PluginWindowlessWin.h"
-#include "ActiveXAsyncDrawingService.h"
+#include "ActiveXAsyncDrawService.h"
+#include "Win/NpapiAsyncDrawService.h"
 #endif
 
 void FBTestPlugin::StaticInitialize()
@@ -98,8 +99,12 @@ bool FBTestPlugin::onMouseMove(FB::MouseMoveEvent *evt, FB::PluginWindow*)
 bool FBTestPlugin::onAttached( FB::AttachedEvent *evt, FB::PluginWindow* win)
 {
     // This is called when the window is attached; don't start drawing before this!
-    if (win && win->getDrawingModel() == FB::PluginWindow::DrawingModelActiveXSurfacePresenter) {
-        startDrawAsync(win);
+    FB::PluginWindowlessWin* windowless = dynamic_cast<FB::PluginWindowlessWin*>(win);
+    if (windowless) {
+        FB::AsyncDrawServicePtr ads = windowless->getAsyncDrawService();
+        if (ads) {
+            startDrawAsync(ads);
+        }
     }
     return false;
 }
@@ -113,8 +118,6 @@ bool FBTestPlugin::onDetached( FB::DetachedEvent *evt, FB::PluginWindow* )
 bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
 {
     FB::Rect pos = win->getWindowPosition();
-    FB::PluginWindow::DrawingModel drawingModel = win->getDrawingModel();
-    FBLOG_INFO("FBTestPlugin::draw", "PluginWindow::DrawingModel() : " << drawingModel );
 
 #if FB_WIN
     HDC hDC;
@@ -122,18 +125,6 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
     FB::PluginWindowWin *wnd = dynamic_cast<FB::PluginWindowWin*>(win);
     PAINTSTRUCT ps;
     if (wndLess) {
-        if (drawingModel == FB::PluginWindow::DrawingModelActiveXSurfacePresenter ||
-            drawingModel == FB::PluginWindow::DrawingModelNpapiAsyncDXGI) 
-        {
-#if 0
-            FBLOG_INFO("FBTestPlugin::draw", "calling drawAsync().  win: " << win << "; pos: " << pos.left << "," << pos.top);
-            if (startDrawAsync(win, pos)) {
-                return true;
-            }
-            wndLess->setDrawingModel(FB::PluginWindow::DrawingModelWindowless); // oh oh: in npapi you can call the function to set this only during Initialization TBD!
-#endif
-        }
-
         hDC = wndLess->getHDC();
     } else if (wnd) {
         hDC = BeginPaint(wnd->getHWND(), &ps);
@@ -166,21 +157,24 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
 
 //////////////////
 
-void FBTestPlugin::renderThread(FB::PluginWindow *win)
+void FBTestPlugin::renderThread(FB::AsyncDrawServicePtr ads)
 {
-    FB::PluginWindowlessWin *wndLess = dynamic_cast<FB::PluginWindowlessWin*>(win);
-    if (!wndLess)
-        return;
+    FB::ActiveX::ActiveXAsyncDrawServicePtr aads = 
+        FB::ptr_cast<FB::ActiveX::ActiveXAsyncDrawService>(ads);
 
-    FB::ActiveX::ActiveXAsyncDrawingServicePtr axds = 
-        FB::ptr_cast<FB::ActiveX::ActiveXAsyncDrawingService>(wndLess->getPlatformAsyncDrawingService());
-    if (!axds)
+    FB::Npapi::NpapiAsyncDrawServicePtr nads = 
+        FB::ptr_cast<FB::Npapi::NpapiAsyncDrawService>(ads);
+
+    if (!aads && !nads)
         return;
 
     try {
         Scene scene(asyncTestBgColor(), FB::utf8_to_wstring(getFSPath()));
         do {
-            axds->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
+            if (aads)
+                aads->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
+            if (nads)
+                nads->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
             boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
         } while(true);
     }
@@ -211,9 +205,9 @@ void FBTestPlugin::ClearWindow()
     m_thread.join();
 }
 
-bool FBTestPlugin::startDrawAsync(FB::PluginWindow* win)
+bool FBTestPlugin::startDrawAsync(FB::AsyncDrawServicePtr ads)
 {
-    m_thread = boost::thread(&FBTestPlugin::renderThread, this, win);
+    m_thread = boost::thread(&FBTestPlugin::renderThread, this, ads);
     return true;
 }
 

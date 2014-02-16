@@ -23,8 +23,6 @@ Copyright 2010 Anson MacKeracher, Firebreath development team
 
 #include "Win/KeyCodesWin.h"
 #include "Win/WindowContextWin.h"
-#include "AsyncDrawingContext.h"
-#include "AsyncDrawingService.h"
 
 namespace FB {
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,7 +66,6 @@ namespace FB {
             void setWindowClipping(FB::Rect clip);
 
             uint32_t getWindowWidth() const { return m_width; }
-
             uint32_t getWindowHeight() const { return m_height; }
 
             // Converts window-space coordinates into plugin-place coordinates
@@ -83,11 +80,7 @@ namespace FB {
             // Invalidate the window (Call from any thread)
             void InvalidateWindow() const;
 
-	        DrawingModel getDrawingModel() const { return m_drawingModel; }
-	        void setDrawingModel(DrawingModel drawingModel) { m_drawingModel = drawingModel; }
-
-            void setPlatformAsyncDrawingService(FB::AsyncDrawingServicePtr p) { m_pPlatformAsyncDrawingService = p; }
-			FB::AsyncDrawingServicePtr getPlatformAsyncDrawingService() { return m_pPlatformAsyncDrawingService; }
+            AsyncDrawServicePtr getAsyncDrawService() const;
 
         protected:
             HDC m_hdc;
@@ -96,9 +89,7 @@ namespace FB {
             uint32_t m_width, m_height; 
             int32_t m_clipTop, m_clipLeft, m_clipBottom, m_clipRight;
             InvalidateWindowFunc m_invalidateWindow;
-
-			DrawingModel m_drawingModel;
-            FB::AsyncDrawingServicePtr m_pPlatformAsyncDrawingService;
+            AsyncDrawServicePtr m_asyncDraw;
     };    
 };
 

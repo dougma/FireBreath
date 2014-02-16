@@ -34,8 +34,7 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include "BrowserPlugin.h"
 #include "PluginCore.h"
 #include "Win/WindowContextWin.h"
-#include "Win/D3d10DrawingContext.h"
-#include "ActiveXAsyncDrawingService.h"
+#include "ActiveXAsyncDrawService.h"
 
 #include "registrymap.hpp"
 
@@ -341,41 +340,45 @@ namespace FB {
                 // window already created or gui disabled
                 return hr;
             }
-            if (m_bWndLess) {
-                pluginWin.swap(boost::scoped_ptr<PluginWindow>(getFactoryInstance()->createPluginWindowless(FB::WindowContextWindowless(NULL))));
-                FB::PluginWindowlessWin* ptr(static_cast<FB::PluginWindowlessWin*>(pluginWin.get()));
-                ptr->setInvalidateWindowFunc(boost::bind(&CFBControlX::invalidateWindow, this, _1, _2, _3, _4));
-                if (m_spInPlaceSite) {
-                    HWND hwnd = 0;
-                    HRESULT hr = m_spInPlaceSite->GetWindow(&hwnd);
+
+            // is async desired and can we do it?
+            boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
+            if (param &&
+                0 == strcmp(param->c_str(), "AsyncWindowsDXGISurface") &&
+                m_viewObjectPresentSite &&
+                m_host)
+            {
+                BOOL accelEnabled = FALSE;
+                HRESULT hr = m_viewObjectPresentSite->IsHardwareComposition(&accelEnabled);
+                if (SUCCEEDED(hr) && accelEnabled) {
+                    hr = m_viewObjectPresentSite->SetCompositionMode(VIEW_OBJECT_COMPOSITION_MODE_SURFACEPRESENTER);
                     if (SUCCEEDED(hr)) {
-                        ptr->setHWND(hwnd);
+                        AsyncDrawServicePtr asd = boost::make_shared<ActiveXAsyncDrawService>(m_host, m_viewObjectPresentSite);
+                        boost::scoped_ptr<PluginWindow> pw(getFactoryInstance()->createPluginWindowless(FB::WindowContextWindowless(NULL, asd)));
+                        pluginWin.swap(pw);
                     }
+                }
+            }
 
-                    ptr->setDrawingModel(FB::PluginWindow::DrawingModelWindowless);
-
-                    // a few things need to align
-                    boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
-                    if (param &&
-                        0 == strcmp(param->c_str(), "SurfacePresenter") &&
-                        m_viewObjectPresentSite &&
-                        m_host)
-                    {
-                        BOOL accelEnabled = FALSE;
-                        HRESULT hr = m_viewObjectPresentSite->IsHardwareComposition(&accelEnabled);
-                        if (SUCCEEDED(hr) && accelEnabled) {
-                            hr = m_viewObjectPresentSite->SetCompositionMode(VIEW_OBJECT_COMPOSITION_MODE_SURFACEPRESENTER);
-                            if (SUCCEEDED(hr)) {
-                                ptr->setPlatformAsyncDrawingService(boost::make_shared<ActiveXAsyncDrawingService>(m_host, m_viewObjectPresentSite));
-                                ptr->setDrawingModel(FB::PluginWindow::DrawingModelActiveXSurfacePresenter);
-                            }
+            if (!pluginWin) {
+                PluginWindow* pw = 0;
+                if (m_bWndLess) {
+                    FB::PluginWindowlessWin* pww;
+                    pw = pww = getFactoryInstance()->createPluginWindowless(FB::WindowContextWindowless(NULL));
+                    pww->setInvalidateWindowFunc(boost::bind(&CFBControlX::invalidateWindow, this, _1, _2, _3, _4));
+                    if (m_spInPlaceSite) {
+                        HWND hwnd = 0;
+                        HRESULT hr = m_spInPlaceSite->GetWindow(&hwnd);
+                        if (SUCCEEDED(hr)) {
+                            pww->setHWND(hwnd);
                         }
                     }
-
+                } else {
+                    PluginWindowWin* pww;
+                    pw = pww = getFactoryInstance()->createPluginWindowWin(FB::WindowContextWin(m_hWnd));
+                    pww->setCallOldWinProc(true);
                 }
-            } else {
-                pluginWin.swap(boost::scoped_ptr<PluginWindow>(getFactoryInstance()->createPluginWindowWin(FB::WindowContextWin(m_hWnd))));
-                static_cast<PluginWindowWin*>(pluginWin.get())->setCallOldWinProc(true);
+                pluginWin.swap(boost::scoped_ptr<PluginWindow>(pw));
             }
             pluginMain->SetWindow(pluginWin.get());
             setReady();

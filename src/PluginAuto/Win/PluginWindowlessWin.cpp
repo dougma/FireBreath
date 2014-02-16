@@ -1,5 +1,6 @@
 #include "PluginWindowlessWin.h"
 #include "ConstructDefaultPluginWindows.h"
+#include "AsyncDrawService.h"
 
 #include "PluginEvents/WindowsEvent.h"
 #include "PluginEvents/GeneralEvents.h"
@@ -18,9 +19,9 @@ FB::PluginWindowlessWin* FB::createPluginWindowless(const FB::WindowContextWindo
 PluginWindowlessWin::PluginWindowlessWin(const FB::WindowContextWindowless& ctx)
     : m_hdc(ctx.drawable)
     , m_browserHwnd(NULL)
-    , m_drawingModel(DrawingModelWindowless) 
     , m_x(0), m_y(0), m_width(0), m_height(0)
     , m_clipTop(0), m_clipLeft(0), m_clipBottom(0), m_clipRight(0) 
+    , m_asyncDraw(ctx.asyncDraw)
 {}
 
 PluginWindowlessWin::~PluginWindowlessWin() {}
@@ -153,8 +154,8 @@ void PluginWindowlessWin::setWindowPosition(int32_t x, int32_t y, uint32_t width
     m_width = width;
 
     if (changed) {
-        if (m_pPlatformAsyncDrawingService)
-            m_pPlatformAsyncDrawingService->resized(width, height);
+        if (m_asyncDraw)
+            m_asyncDraw->resized(width, height);
         ResizedEvent ev;
         SendEvent(&ev);  //notify the plugin the window has changed position/size
     }
@@ -195,8 +196,13 @@ void PluginWindowlessWin::setWindowClipping(FB::Rect clip) {
     m_clipRight = clip.right;
 }
 
-void FB::PluginWindowlessWin::InvalidateWindow() const
+void PluginWindowlessWin::InvalidateWindow() const
 {
     if (m_invalidateWindow)
         m_invalidateWindow(0, 0, getWindowWidth(), getWindowHeight());
+}
+
+AsyncDrawServicePtr PluginWindowlessWin::getAsyncDrawService() const
+{
+    return m_asyncDraw;
 }

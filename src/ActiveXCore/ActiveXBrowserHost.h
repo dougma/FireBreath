@@ -27,14 +27,6 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include "SafeQueue.h"
 #include "ShareableReference.h"
 #include "ActiveXFactoryDefinitions.h"
-#include "ActiveXD3d10Helper.h"
-
-struct ISurfacePresenter;
-
-namespace FB
-{
-	FB_FORWARD_PTR(AsyncDrawingService);
-}
 
 namespace FB {
     class WinMessageWindow;

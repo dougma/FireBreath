@@ -14,7 +14,6 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #include <boost/smart_ptr/make_shared.hpp>
 #include "logging.h"
 
-#include "D3d10DrawingContext.h"
 #include "D3d10Helper.h"
 
 using namespace FB;
@@ -114,24 +113,4 @@ HRESULT D3d10Helper::initDevice()
     return m_device ? S_OK : getD3D10Device(&m_device);
 }
 
-HRESULT D3d10Helper::openSharedResources(HANDLE hFrontBufferSharedHandle, HANDLE hBackBufferSharedHandle) 
-{
-    if (!m_device)
-        return S_FALSE;
 
-    HRESULT hr = m_device->OpenSharedResource(hFrontBufferSharedHandle, __uuidof(ID3D10Texture2D), (void**)&m_buffer[0]);
-    if (SUCCEEDED(hr)) {
-        hr = m_device->OpenSharedResource(hBackBufferSharedHandle, __uuidof(ID3D10Texture2D), (void**)&m_buffer[1]);
-    }
-    return hr;
-}
-
-bool D3d10Helper::beginDrawAsync()
-{
-    return false;
-}
-
-bool D3d10Helper::endDrawAsync()
-{
-    return false;
-}

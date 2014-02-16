@@ -19,25 +19,25 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #include <atlbase.h>
 #include <mshtml.h>
 #include "APITypes.h"
-#include "AsyncDrawingService.h"
+#include "AsyncDrawService.h"
 #include "Win\D3d10Helper.h"
 
 namespace FB {
     namespace ActiveX {
 
-        FB_FORWARD_PTR(ActiveXAsyncDrawingService);
+        FB_FORWARD_PTR(ActiveXAsyncDrawService);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// @class  ActiveXAsyncDrawingService
+        /// @class  ActiveXAsyncDrawService
         ///
-        /// @brief  Provides a AsyncDrawingService implementation for ActiveX
+        /// @brief  Provides a AsyncDrawService implementation for ActiveX
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        class ActiveXAsyncDrawingService : public D3d10Helper
+        class ActiveXAsyncDrawService : public D3d10Helper
         {
         public:
             typedef boost::function<bool(ID3D10Device1*, ID3D10RenderTargetView*, uint32_t, uint32_t)> RenderCallback;
 
-            ActiveXAsyncDrawingService(FB::BrowserHostPtr host, IViewObjectPresentSite*);
+            ActiveXAsyncDrawService(FB::BrowserHostPtr host, IViewObjectPresentSite*);
             virtual void resized(uint32_t width, uint32_t height);
             void render(RenderCallback cb);
 

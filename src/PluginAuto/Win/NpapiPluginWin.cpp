@@ -21,14 +21,43 @@ Copyright 2009 PacketPass, Inc and the Firebreath development team
 #include "Win/NpapiPluginWin.h"
 #include "Win/PluginWindowWin.h"
 #include "Win/PluginWindowlessWin.h"
+#include "Win/NpapiAsyncDrawService.h"
 #include "NpapiPluginFactory.h"
 #include "PluginInfo.h"
-#include "NpapiAsyncDrawingService.h"
 #include "precompiled_headers.h" // On windows, everything above this line in PCH
 
 using namespace FB::Npapi;
 
 extern std::string g_dllPath;
+
+
+struct DrawingModel {
+    const char* name;
+    NPNVariable query;
+    NPDrawingModel model;
+
+    bool negotiate(const NpapiBrowserHostPtr& host, const char* requested, boost::function<void(NPDrawingModel)> factory) const
+    {
+        const DrawingModel* dm = this;
+        while (dm->name && strcmp(requested, dm->name)) dm++;
+        NPBool supported = false;
+        if (dm->name &&
+            NPERR_NO_ERROR == host->GetValue(dm->query, &supported) && supported &&
+            // isDrawingModelPermitted(dm->name) &&  // virtual func on NpapiPlugin? todo
+            NPERR_NO_ERROR == host->SetValue(NPPVpluginDrawingModel, (void*) dm->model))
+        {
+            factory(dm->model);
+            return true;
+        }
+        return false;
+    }
+
+};
+
+#define FB_DRAWING_MODEL(x) { #x, NPNVsupports##x##Bool, NPDrawingModel##x }
+#define FB_DRAWING_MODEL_FBLEGACYNAME(x, f) { "NPDrawingModel"#x, NPNVsupports##x##Bool, NPDrawingModel##x }
+#define FB_DRAWING_MODEL_END_LIST { 0, (NPNVariable) 0, (NPDrawingModel) 0 }
+
 
 FB::Npapi::NpapiPluginPtr FB::Npapi::createNpapiPlugin(const FB::Npapi::NpapiBrowserHostPtr& host, const std::string& mimetype)
 {
@@ -36,7 +65,8 @@ FB::Npapi::NpapiPluginPtr FB::Npapi::createNpapiPlugin(const FB::Npapi::NpapiBro
 }
 
 NpapiPluginWin::NpapiPluginWin(const NpapiBrowserHostPtr& host, const std::string& mimetype)
-    : NpapiPlugin(host, mimetype), pluginWin(NULL)
+    : NpapiPlugin(host, mimetype)
+    , m_drawingModel((NPDrawingModel)-1)
 {
     PluginCore::setPlatform("Windows", "NPAPI");
     setFSPath(g_dllPath);
@@ -44,53 +74,42 @@ NpapiPluginWin::NpapiPluginWin(const NpapiBrowserHostPtr& host, const std::strin
 
 NpapiPluginWin::~NpapiPluginWin()
 {
-    delete pluginWin; pluginWin = NULL;
+    pluginMain->ClearWindow();
 }
 
+void NpapiPluginWin::pluginWindowFactory(NPDrawingModel model)
+{
+    AsyncDrawServicePtr asd = boost::make_shared<NpapiAsyncDrawService>(m_npHost);
+    PluginWindow* pw = getFactoryInstance()->createPluginWindowless(WindowContextWindowless(NULL, asd));
+    pluginWin.swap(boost::scoped_ptr<PluginWindow>(pw));
+    m_drawingModel = model;
+}
 
-struct DrawingModel {
-    const char* name;
-    NPNVariable query;
-    NPDrawingModel model;
-};
-
-#define DRAWING_MODEL(x) { #x, NPNVsupports##x##Bool, NPDrawingModel##x }
-#define DRAWING_MODEL_FBLEGACYNAME(x) { "NPDrawingModel"#x, NPNVsupports##x##Bool, NPDrawingModel##x }
-#define END_LIST { 0, (NPNVariable) 0, (NPDrawingModel) 0 }
-
-static const DrawingModel s_models[] = {
-    DRAWING_MODEL(AsyncBitmapSurface),
-    DRAWING_MODEL(AsyncWindowsDXGISurface),
-    END_LIST
-};
-
-
-void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], char *argv[]) 
+void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], char *argv[])
 {
     NpapiPlugin::init(pluginType, argc, argn, argv);
 
-    // todo: move this to base class
-    boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
-    if (param) {
-        using namespace boost::algorithm;
-        std::vector<std::string> prefs;
-        split(prefs, *param, !is_alnum());
+    static const DrawingModel s_models[] = {
+        FB_DRAWING_MODEL(AsyncBitmapSurface),
+        FB_DRAWING_MODEL(AsyncWindowsDXGISurface),
+        FB_DRAWING_MODEL_END_LIST
+    };
 
-        bool gotone = false;
-        for (size_t i = 0; !gotone && i < prefs.size(); i++) {
-            NPBool supported = false;
-            const DrawingModel* dm = &s_models[0];
-            while (dm->name && strcmp(prefs[i].c_str(), dm->name)) dm++;
-            if (dm->name &&
-                NPERR_NO_ERROR == m_npHost->GetValue(dm->query, &supported) && supported &&
-//                isDrawingModelPermitted(dm->name) &&  // virtual func, todo
-                NPERR_NO_ERROR == m_npHost->SetValue(NPPVpluginDrawingModel, (void*) dm->model))
-            {
-                gotone = true;
-            }
-        }
-        int ii = 0;
+    if (!FB::pluginGuiEnabled() || pluginMain->isWindowless()) {
+        /* Windowless plugins require negotiation with the browser.
+        * If the plugin does not set this value it is assumed to be
+        * a windowed plugin.
+        * See: https://developer.mozilla.org/en/Gecko_Plugin_API_Reference/Drawing_and_Event_Handling
+        */
+        m_npHost->SetValue(NPPVpluginWindowBool, (void*)false);
+        m_npHost->SetValue(NPPVpluginTransparentBool, (void*)true); // Set transparency to true
     }
+
+    boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
+    bool negotiated = param && s_models->negotiate(m_npHost, param->c_str(), boost::bind(&NpapiPluginWin::pluginWindowFactory, this, _1));
+    if (negotiated) {
+        pluginMain->SetWindow(pluginWin.get());
+    } 
 }
 
 void NpapiPluginWin::invalidateWindow( uint32_t left, uint32_t top, uint32_t right, uint32_t bottom )
@@ -112,25 +131,32 @@ NPError NpapiPluginWin::SetWindow(NPWindow* window)
         if(pluginMain != NULL) {
             // Destroy our FireBreath window
             pluginMain->ClearWindow();
-            delete pluginWin; pluginWin = NULL;
+            pluginWin.reset();
         }
         return NPERR_NO_ERROR;
     }
     if (!pluginGuiEnabled())
         return NPERR_NO_ERROR;
 
+    if (m_drawingModel == NPDrawingModelAsyncWindowsDXGISurface) {
+        PluginWindowlessWin* win = dynamic_cast<PluginWindowlessWin*>(pluginWin.get());
+        assert(win);
+        if (win) {
+            win->setWindowPosition(window->x, window->y, window->width, window->height);
+        }
+    } else
     // Code here diverges depending on if 
     // the plugin is windowed or windowless.
     if(pluginMain->isWindowless()) { 
         assert(window->type == NPWindowTypeDrawable);
-        PluginWindowlessWin* win = dynamic_cast<PluginWindowlessWin*>(pluginWin);
+        PluginWindowlessWin* win = dynamic_cast<PluginWindowlessWin*>(pluginWin.get());
 
         if(win == NULL && pluginWin != NULL) {
             // We've received a window of a different type than the 
             // window we have been using up until now.
             // This is unlikely/impossible, but it's worth checking for.
             pluginMain->ClearWindow();
-            delete pluginWin; pluginWin = NULL;
+            pluginWin.reset();
         }
 
         if(pluginWin == NULL) {
@@ -144,25 +170,25 @@ NPError NpapiPluginWin::SetWindow(NPWindow* window)
                                    window->clipRect.bottom, window->clipRect.right);
             win->setInvalidateWindowFunc(boost::bind(&NpapiPluginWin::invalidateWindow, this, _1, _2, _3, _4));
             pluginMain->SetWindow(win);
-            pluginWin = win;
-        } else {
+            pluginWin.reset(win);
+        } else if (win) {
             win->setWindowPosition(window->x, window->y, window->width, window->height);
             win->setWindowClipping(window->clipRect.top, window->clipRect.left,
                                    window->clipRect.bottom, window->clipRect.right);
         }
     } else { 
         assert(window->type == NPWindowTypeWindow);
-        PluginWindowWin* win = dynamic_cast<PluginWindowWin*>(pluginWin);
+        PluginWindowWin* win = dynamic_cast<PluginWindowWin*>(pluginWin.get());
         // Check to see if we've received a new HWND (new window)
         if(win != NULL && win->getHWND() != (HWND)window->window) {
             pluginMain->ClearWindow();
-            delete pluginWin; pluginWin = NULL; 
+            pluginWin.reset() ;
         } else if(win == NULL && pluginWin != NULL) {
             // We've received a window of a different type than the 
             // window we have been using up until now.
             // This is unlikely/impossible, but it's worth checking for.
             pluginMain->ClearWindow();
-            delete pluginWin; pluginWin = NULL; 
+            pluginWin.reset();
         }
     
         if(pluginWin == NULL) {
@@ -174,7 +200,7 @@ NPError NpapiPluginWin::SetWindow(NPWindow* window)
             win = getFactoryInstance()->createPluginWindowWin(FB::WindowContextWin((HWND)window->window));
             win->setBrowserHWND(browserHWND);
             pluginMain->SetWindow(win);
-            pluginWin = win;
+            pluginWin.reset(win);
         }    
     }
 
@@ -182,10 +208,10 @@ NPError NpapiPluginWin::SetWindow(NPWindow* window)
 }
 
 int16_t NpapiPluginWin::HandleEvent(void* event) {
-    PluginWindowlessWin* win = dynamic_cast<PluginWindowlessWin*>(pluginWin);
-    NPEvent* evt(reinterpret_cast<NPEvent*>(event));
+    PluginWindowlessWin* win = dynamic_cast<PluginWindowlessWin*>(pluginWin.get());
     if(win != NULL) {
         LRESULT lRes(0);
+        NPEvent* evt(reinterpret_cast<NPEvent*>(event));
         if (evt->event == WM_PAINT) {  //special handle drawing, as we need to pass the draw bounds through the layers
             FB::Rect bounds;
             if (evt->lParam) {  // some browsers pass through bounds in lParam, but Safari does not (as of 5.0.5)

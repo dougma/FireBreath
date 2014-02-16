@@ -14,12 +14,12 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 
 #include <boost/bind.hpp>
 #include "BrowserHost.h"
-#include "ActiveXAsyncDrawingService.h"
+#include "ActiveXAsyncDrawService.h"
 #include "logging.h"
 
 using namespace FB::ActiveX;
 
-ActiveXAsyncDrawingService::ActiveXAsyncDrawingService(FB::BrowserHostPtr host, IViewObjectPresentSite* vops)
+ActiveXAsyncDrawService::ActiveXAsyncDrawService(FB::BrowserHostPtr host, IViewObjectPresentSite* vops)
     : m_host(host)
     , m_pViewObjectPresentSite(vops)
     , m_width(0), m_height(0)
@@ -29,7 +29,7 @@ ActiveXAsyncDrawingService::ActiveXAsyncDrawingService(FB::BrowserHostPtr host, 
     initDevice();
 }
 
-void ActiveXAsyncDrawingService::resized(uint32_t width, uint32_t height)
+void ActiveXAsyncDrawService::resized(uint32_t width, uint32_t height)
 {
     m_dimsChanged = (m_width != width) || (m_height != height);
 
@@ -43,7 +43,7 @@ void ActiveXAsyncDrawingService::resized(uint32_t width, uint32_t height)
     }
 }
 
-void ActiveXAsyncDrawingService::present(bool initOnly)
+void ActiveXAsyncDrawService::present(bool initOnly)
 {
     if (!m_pViewObjectPresentSite || !m_device)
         return;
@@ -70,7 +70,7 @@ void ActiveXAsyncDrawingService::present(bool initOnly)
         HRESULT hr = m_pViewObjectPresentSite->CreateSurfacePresenter(
             m_device, m_width, m_height, backBuffers, format, VIEW_OBJECT_ALPHA_MODE_PREMULTIPLIED, &m_pSurfacePresenter);
         if (FAILED(hr) || !m_pSurfacePresenter) {
-            FBLOG_ERROR("ActiveXD3d10Helper::_renewAsyncDrawing", "CreateSurfacePresenter failed");
+            FBLOG_ERROR("ActiveXAsyncDrawService::present", "CreateSurfacePresenter failed");
             return;
         }
     } 
@@ -86,7 +86,7 @@ void ActiveXAsyncDrawingService::present(bool initOnly)
 
 
 
-void ActiveXAsyncDrawingService::render(RenderCallback cb)
+void ActiveXAsyncDrawService::render(RenderCallback cb)
 {
     if (!m_device)
         return;
@@ -110,7 +110,7 @@ void ActiveXAsyncDrawingService::render(RenderCallback cb)
         if (host->isMainThread()) {
             present(false);
         } else {
-            host->ScheduleOnMainThread(this->shared_from_this(), boost::bind(&ActiveXAsyncDrawingService::present, this, false));
+            host->ScheduleOnMainThread(this->shared_from_this(), boost::bind(&ActiveXAsyncDrawService::present, this, false));
         }
     }
 }

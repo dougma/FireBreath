@@ -18,26 +18,19 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 
 #include "win_common.h"
 #include <d3d10_1.h>
-#include "APITypes.h"
-#include "D3d10DrawingContext.h"
-#include "AsyncDrawingService.h"
+#include "AsyncDrawService.h"
 
 namespace FB
 {
     class D3d10Helper
-        : public AsyncDrawingService
+        : public AsyncDrawService
     {
     public:
         virtual ~D3d10Helper();
         HRESULT initDevice();
-        HRESULT openSharedResources(HANDLE hFrontBufferSharedHandle, HANDLE hBackBufferSharedHandle);
-
-        virtual bool beginDrawAsync();
-        virtual bool endDrawAsync();
 
     protected:
         CComPtr<ID3D10Device1> m_device;
-        CComPtr<ID3D10Texture2D> m_buffer[2];
     };  
 }
 

@@ -30,7 +30,6 @@ namespace FB
     FB_FORWARD_PTR(PluginEventSink);
     FB_FORWARD_PTR(JSObject);
     class BrowserStreamRequest;
-    FB_FORWARD_PTR(AsyncDrawingContext);
 
     namespace DOM {
         FB_FORWARD_PTR(Window);
@@ -38,8 +37,6 @@ namespace FB
         FB_FORWARD_PTR(Element);
         FB_FORWARD_PTR(Node);
     };
-
-    typedef boost::shared_ptr<AsyncDrawingContext> AsyncDrawingContextPtr;    
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// @struct AsyncLogRequest
