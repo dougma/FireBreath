@@ -17,7 +17,7 @@
 
 #include "PluginCore.h"
 #include "PluginWindow.h"
-#include "ActiveXAsyncDrawService.h"
+#include "Win/D3d10AsyncDrawService.h"
 
 
 class FBTestPlugin : public FB::PluginCore
@@ -55,8 +55,8 @@ public:
     /** END EVENTDEF -- DON'T CHANGE THIS LINE **/
 
   private:
-    bool startDrawAsync(FB::AsyncDrawServicePtr);
-    void renderThread(FB::AsyncDrawServicePtr);
+    bool startDrawAsync(FB::D3d10AsyncDrawServicePtr);
+    void renderThread(FB::D3d10AsyncDrawServicePtr);
     bool render(ID3D10Device1*, ID3D10RenderTargetView*);
 
     uint32_t asyncTestBgColor();

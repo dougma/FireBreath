@@ -17,7 +17,7 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 #define H_NPAPIASYNCDRAWSERVICE
 
 #include "NpapiBrowserHost.h"
-#include "Win\D3d10Helper.h"
+#include "Win\D3d10AsyncDrawService.h"
 
 namespace FB {
     namespace Npapi {
@@ -27,43 +27,32 @@ namespace FB {
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// @class  NpapiAsyncDrawService
         ///
-        /// @brief  Provides an AsyncDrawService implementation for NPAPI
+        /// @brief  Provides a D3d10AsyncDrawService implementation for NPAPI
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        class NpapiAsyncDrawService : public D3d10Helper
+        class NpapiAsyncDrawService : public D3d10AsyncDrawService
         {
-            // wrap the NPAsyncSurface to track init/finalize
-            struct Surface : NPAsyncSurface
+            // wrap the NPAsyncSurface to track initialised state
+            struct Surface : public NPAsyncSurface
             {
                 Surface();
                 NPError init(NpapiBrowserHost*, NPSize*);
                 void finalize(NpapiBrowserHost*);
                 void makeCurrent(NpapiBrowserHost*);
-                bool sizeIsDifferent(const NPSize&) const;
+                bool sizeIsDifferent(unsigned, unsigned) const;
                 bool valid;
             };
+
+            static void finalizeSurfaces(NpapiBrowserHostWeakPtr weakHost, Surface a, Surface b);
 
             NpapiBrowserHostWeakPtr m_weakHost;
             Surface m_surface[2];
             int m_current;
-            NPSize m_dims;
-            bool m_dimsChanged;         // since last call to present()
 
-            boost::mutex m_mut;
-            boost::condition_variable m_cond;
-            CComPtr<ID3D10Texture2D> m_pBackBuffer;
-            CComPtr<IDXGIKeyedMutex> m_pBufferMutex;
-
-            void present(bool init);
+            virtual void present(bool resizing);
 
         public:
-            typedef boost::function<bool(ID3D10Device1*, ID3D10RenderTargetView*, uint32_t, uint32_t)> RenderCallback;
-
             NpapiAsyncDrawService(NpapiBrowserHostPtr host);
-            virtual ~NpapiAsyncDrawService() {};
-
-            void render(RenderCallback cb);
-
-            virtual void resized(uint32_t width, uint32_t height);
+            ~NpapiAsyncDrawService();
         };
     };
 };

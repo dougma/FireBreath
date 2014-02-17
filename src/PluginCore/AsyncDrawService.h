@@ -13,15 +13,13 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 \**********************************************************/
 
 #pragma once
-#ifndef H_FB_ASYNCDRAWINGSERVICE
-#define H_FB_ASYNCDRAWINGSERVICE
+#ifndef H_FB_ASYNCDRAWSERVICE
+#define H_FB_ASYNCDRAWSERVICE
 
 #include "FBPointers.h"
 #include "boost/enable_shared_from_this.hpp"
 
 namespace FB {
-    struct Rect;
-
     FB_FORWARD_PTR(AsyncDrawService);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////

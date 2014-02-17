@@ -1,31 +1,53 @@
+/**********************************************************\ 
+Original Author: Gil Gonen
+
+Created:    Jan 28, 2013
+License:    Dual license model; choose one of two:
+            New BSD License
+            http://www.opensource.org/licenses/bsd-license.php
+            - or -
+            GNU Lesser General Public License, version 2.1
+            http://www.gnu.org/licenses/lgpl-2.1.html
+
+Copyright 2013 Gil Gonen and the Firebreath development team
+\**********************************************************/
+
 #include "NpapiAsyncDrawService.h"
 
 using namespace FB::Npapi;
 
 
 NpapiAsyncDrawService::NpapiAsyncDrawService(NpapiBrowserHostPtr host)
-    : m_weakHost(host)
+    : D3d10AsyncDrawService(host)
+    , m_weakHost(host)
     , m_current(0)
-    , m_dimsChanged(false)
 {
-    m_dims.height = m_dims.width = 0;
-    initDevice();
 }
 
-void 
-NpapiAsyncDrawService::resized(uint32_t width, uint32_t height)
+// static
+void NpapiAsyncDrawService::finalizeSurfaces(NpapiBrowserHostWeakPtr weakHost, Surface a, Surface b)
 {
-    m_dimsChanged = (m_dims.width != width) || (m_dims.height != height);
-
-    uint32_t was = m_dims.width * m_dims.height;
-    uint32_t now = width * height;
-
-    m_dims.width = width; m_dims.height = height;
-
-    if (was == 0 && now != 0) {
-        present(true);
+    NpapiBrowserHostPtr host = weakHost.lock();
+    if (host) {
+        a.finalize(host.get());
+        b.finalize(host.get());
     }
 }
+
+NpapiAsyncDrawService::~NpapiAsyncDrawService()
+{
+    NpapiBrowserHostPtr host = m_weakHost.lock();
+    if (host) {
+        if (host->isMainThread()) {
+            m_surface[0].finalize(host.get());
+            m_surface[1].finalize(host.get());
+        } else {
+            boost::shared_ptr<void> dummy;
+            host->ScheduleOnMainThread(dummy, boost::bind(finalizeSurfaces, m_weakHost, m_surface[0], m_surface[1]));
+        }
+    }
+}
+
 
 void NpapiAsyncDrawService::present(bool initOnly)
 {
@@ -41,15 +63,15 @@ void NpapiAsyncDrawService::present(bool initOnly)
         return;
 
     int next = 1 - m_current;
-    m_device->Flush();
     m_surface[next].makeCurrent(host);
     int prev = m_current;
     m_current = next;
 
     // create or (if the size has changed) recreate the back buffer
-    if (m_surface[prev].sizeIsDifferent(m_dims)) {
-        if (m_dims.width && m_dims.height) {
-            m_surface[prev].init(host, &m_dims);
+    if (m_surface[prev].sizeIsDifferent(m_width, m_height)) {
+        if (m_width && m_height) {
+            NPSize dims = { m_width, m_height };
+            m_surface[prev].init(host, &dims);
         }
     }
     
@@ -73,37 +95,6 @@ void NpapiAsyncDrawService::present(bool initOnly)
         }
     }
 }
-
-
-void NpapiAsyncDrawService::render(RenderCallback cb)
-{
-    if (!m_device)
-        return;
-
-    boost::unique_lock<boost::mutex> lock(m_mut);
-    while (!m_pBackBuffer)
-    {
-        m_cond.wait(lock);
-    }
-
-    CComPtr<ID3D10RenderTargetView> rtView;
-    HRESULT hr = m_device->CreateRenderTargetView(m_pBackBuffer, NULL, &rtView);
-    if (SUCCEEDED(hr)) {
-        D3D10_TEXTURE2D_DESC desc;
-        m_pBackBuffer->GetDesc(&desc);
-        cb(m_device, rtView, desc.Width, desc.Height);
-    }
-
-    BrowserHostPtr host(m_weakHost.lock());
-    if (host) {
-        if (host->isMainThread()) {
-            present(false);
-        } else {
-            host->ScheduleOnMainThread(this->shared_from_this(), boost::bind(&NpapiAsyncDrawService::present, this, false));
-        }
-    }
-}
-
 
 NpapiAsyncDrawService::Surface::Surface()
     : valid(false)
@@ -134,7 +125,7 @@ void NpapiAsyncDrawService::Surface::makeCurrent(NpapiBrowserHost* host)
     host->SetCurrentAsyncSurface(valid ? this : 0, NULL);
 }
 
-bool NpapiAsyncDrawService::Surface::sizeIsDifferent(const NPSize& b) const
+bool NpapiAsyncDrawService::Surface::sizeIsDifferent(unsigned width, unsigned height) const
 {
-    return !valid || b.height != size.height || b.width != size.width;
+    return !valid || height != size.height || width != size.width;
 }

@@ -31,7 +31,7 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include "ActiveXBrowserHost.h"
 #include "BrowserStreamRequest.h"
 #include "precompiled_headers.h" // On windows, everything above this line in PCH
-#include "Win/D3d10Helper.h"
+#include "Win/D3d10AsyncDrawService.h"
 
 using namespace FB;
 using namespace FB::ActiveX;

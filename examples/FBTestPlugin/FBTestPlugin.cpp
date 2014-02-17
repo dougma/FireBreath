@@ -101,7 +101,7 @@ bool FBTestPlugin::onAttached( FB::AttachedEvent *evt, FB::PluginWindow* win)
     // This is called when the window is attached; don't start drawing before this!
     FB::PluginWindowlessWin* windowless = dynamic_cast<FB::PluginWindowlessWin*>(win);
     if (windowless) {
-        FB::AsyncDrawServicePtr ads = windowless->getAsyncDrawService();
+        FB::D3d10AsyncDrawServicePtr ads = FB::ptr_cast<FB::D3d10AsyncDrawService>(windowless->getAsyncDrawService());
         if (ads) {
             startDrawAsync(ads);
         }
@@ -125,6 +125,10 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
     FB::PluginWindowWin *wnd = dynamic_cast<FB::PluginWindowWin*>(win);
     PAINTSTRUCT ps;
     if (wndLess) {
+        if (wndLess->getAsyncDrawService()) {
+            // Firefox still calls draw when we are async drawing! (IE doesn't)
+            return true;
+        }
         hDC = wndLess->getHDC();
     } else if (wnd) {
         hDC = BeginPaint(wnd->getHWND(), &ps);
@@ -157,33 +161,33 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
 
 //////////////////
 
-void FBTestPlugin::renderThread(FB::AsyncDrawServicePtr ads)
+bool FBTestPlugin::startDrawAsync(FB::D3d10AsyncDrawServicePtr ads)
 {
-    FB::ActiveX::ActiveXAsyncDrawServicePtr aads = 
-        FB::ptr_cast<FB::ActiveX::ActiveXAsyncDrawService>(ads);
+    m_thread = boost::thread(&FBTestPlugin::renderThread, this, ads);
+    return true;
+}
 
-    FB::Npapi::NpapiAsyncDrawServicePtr nads = 
-        FB::ptr_cast<FB::Npapi::NpapiAsyncDrawService>(ads);
-
-    if (!aads && !nads)
-        return;
-
+void FBTestPlugin::renderThread(FB::D3d10AsyncDrawServicePtr ads)
+{
+    assert(ads);
     try {
         Scene scene(asyncTestBgColor(), FB::utf8_to_wstring(getFSPath()));
         do {
-            if (aads)
-                aads->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
-            if (nads)
-                nads->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
+            ads->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
             boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
         } while(true);
     }
-    catch (const std::exception& e) {
-    }
     catch (boost::thread_interrupted) {
+        // this is expected
     }
-    catch (...) {
-    }
+}
+
+//virtual
+void FBTestPlugin::ClearWindow()
+{
+    // the window is about to go away, so we need to stop our render thread
+    m_thread.interrupt();
+    m_thread.join();
 }
 
 void FBTestPlugin::onPluginReady()
@@ -195,20 +199,6 @@ void FBTestPlugin::onPluginReady()
     FB::URI uri = FB::URI::fromString(window->getLocation());
     bool log = uri.query_data.find("log") != uri.query_data.end();
     m_host->setEnableHtmlLog(log);
-}
-
-//virtual
-void FBTestPlugin::ClearWindow()
-{
-    // the window is about to go away, so we need to stop our render thread
-    m_thread.interrupt();
-    m_thread.join();
-}
-
-bool FBTestPlugin::startDrawAsync(FB::AsyncDrawServicePtr ads)
-{
-    m_thread = boost::thread(&FBTestPlugin::renderThread, this, ads);
-    return true;
 }
 
 uint32_t FBTestPlugin::asyncTestBgColor()
