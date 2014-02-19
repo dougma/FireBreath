@@ -56,7 +56,6 @@ file (GLOB SCRIPTING RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 
 file (GLOB PLUGIN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     ActiveXAsync*
-    ActiveXD3d*
     ActiveXFact*
     FBControl.*
     ax*.cpp

@@ -18,7 +18,6 @@ Copyright 2009 Richard Bateman, Firebreath development team
 
 #include "win_common.h"
 //#include "global/COM_config.h"
-#include <mshtml.h>
 #include <atlctl.h>
 #include <map>
 #include "BrowserHost.h"
@@ -32,7 +31,6 @@ namespace FB {
     class WinMessageWindow;
     class BrowserStreamRequest;
     namespace ActiveX {
-
         FB_FORWARD_PTR(ActiveXBrowserHost);
         FB_FORWARD_PTR(IDispatchAPI);
 

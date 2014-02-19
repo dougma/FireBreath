@@ -13,7 +13,6 @@ Copyright 2009 PacketPass, Inc and the Firebreath development team
 \**********************************************************/
 
 #include <boost/make_shared.hpp>
-#include <boost/algorithm/string.hpp>
 #include "win_common.h"
 #include "NpapiTypes.h"
 #include "PluginCore.h"

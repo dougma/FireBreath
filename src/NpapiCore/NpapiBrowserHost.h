@@ -49,6 +49,7 @@ namespace FB {
 
     public:
         virtual BrowserStreamPtr _createStream( const BrowserStreamRequest& req ) const;
+        
         virtual BrowserStreamPtr _createUnsolicitedStream(const BrowserStreamRequest& req) const;
 
     public:

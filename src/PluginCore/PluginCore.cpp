@@ -139,7 +139,7 @@ bool PluginCore::isWindowless()
             } catch (const FB::bad_variant_cast& ex) {
                 FB_UNUSED_VARIABLE(ex);
             }
-        }
+       }
     }
     return m_windowLessParam;
 }

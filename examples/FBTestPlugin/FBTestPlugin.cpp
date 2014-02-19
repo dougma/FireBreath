@@ -136,6 +136,8 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
         pos.left = 0;
         pos.bottom -= pos.top;
         pos.top = 0;
+    } else {
+        return true;
     }
 
     ::SetTextAlign(hDC, TA_CENTER|TA_BASELINE);
