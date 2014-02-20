@@ -7,6 +7,9 @@
 
 \**********************************************************/
 
+#define _USE_MATH_DEFINES
+
+#include <math.h>
 #include <sstream>
 #include <stdio.h>
 #include "boost/bind.hpp" 
@@ -18,11 +21,9 @@
 #include "URI.h"
 
 #ifdef FB_WIN
-#include <mshtml.h>
 #include "PluginWindowWin.h"
 #include "PluginWindowlessWin.h"
-#include "ActiveXAsyncDrawService.h"
-#include "Win/NpapiAsyncDrawService.h"
+#include "Win/D3d10AsyncDrawService.h"
 #endif
 
 void FBTestPlugin::StaticInitialize()
@@ -157,23 +158,40 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
     return true;
 }
 
-//////////////////
-
-#include "Scene.h"
-
-//////////////////
-
 bool FBTestPlugin::startDrawAsync(FB::D3d10AsyncDrawServicePtr ads)
 {
     m_thread = boost::thread(&FBTestPlugin::renderThread, this, ads);
     return true;
 }
 
+struct Scene
+{
+    uint32_t _frame;
+    uint32_t _abgr; 
+
+    Scene(uint32_t abgrBackground)
+        : _frame(0)
+        , _abgr(abgrBackground)
+    {}
+
+    bool render(ID3D10Device1* device, ID3D10RenderTargetView* rtView, uint32_t width, uint32_t height)
+    {
+        uint32_t r = (_abgr & 0xFF);
+        uint32_t g = (_abgr & 0xFF00) >> 8;
+        uint32_t b = (_abgr & 0xFF0000) >> 16;
+        float a = (float) (sin(_frame / 31.0 * M_PI) / 2 + 0.5);
+        float color[4] = { b * a / 255.f, g * a / 255.f, r * a / 255.f, a };
+        device->ClearRenderTargetView(rtView, color);
+        // insert fancy demo here
+        ++_frame;
+        return true;
+    }
+};
+
 void FBTestPlugin::renderThread(FB::D3d10AsyncDrawServicePtr ads)
 {
-    assert(ads);
     try {
-        Scene scene(asyncTestBgColor(), FB::utf8_to_wstring(getFSPath()));
+        Scene scene(asyncTestBgColor());
         do {
             ads->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
             boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
