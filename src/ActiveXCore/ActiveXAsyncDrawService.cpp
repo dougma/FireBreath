@@ -28,7 +28,8 @@ ActiveXAsyncDrawService::ActiveXAsyncDrawService(FB::BrowserHostPtr host, IViewO
 
 void ActiveXAsyncDrawService::present(bool initOnly)
 {
-    if (!m_device)
+    ID3D10Device1* dev = device();
+    if (!dev)
         return;
 
     if (m_pSurfacePresenter) {
@@ -51,7 +52,7 @@ void ActiveXAsyncDrawService::present(bool initOnly)
         UINT backBuffers = 1;
         DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM;    // IE9 only supports this one
         HRESULT hr = m_pViewObjectPresentSite->CreateSurfacePresenter(
-            m_device, m_width, m_height, backBuffers, format, VIEW_OBJECT_ALPHA_MODE_PREMULTIPLIED, &m_pSurfacePresenter);
+            dev, m_width, m_height, backBuffers, format, VIEW_OBJECT_ALPHA_MODE_PREMULTIPLIED, &m_pSurfacePresenter);
         if (FAILED(hr) || !m_pSurfacePresenter) {
             FBLOG_ERROR("ActiveXAsyncDrawService::present", "CreateSurfacePresenter failed");
             return;

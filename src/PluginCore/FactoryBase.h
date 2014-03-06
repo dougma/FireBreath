@@ -44,7 +44,9 @@ namespace FB
 
     /// @brief  Defines an alias representing a boost::shared_ptr<PluginCore>
     typedef boost::shared_ptr<PluginCore> PluginCorePtr;
-    
+
+    FB_FORWARD_PTR(D3d10DeviceContext);
+
     namespace Npapi { 
         FB_FORWARD_PTR(NpapiPlugin);
         FB_FORWARD_PTR(NpapiBrowserHost);
@@ -239,6 +241,8 @@ namespace FB
         virtual IDispatchEx*                createCOMJSObject(const FB::BrowserHostPtr& host, const FB::JSAPIWeakPtr& api, bool autoRelease = false);
         virtual HRESULT                     UpdateWindowsRegistry( bool install );
 #endif
+
+        virtual D3d10DeviceContextPtr       createD3d10DeviceContext();
       
 #ifdef FB_MACOSX
         ////////////////////////////////////////////////////////////////////////////////////////////////////

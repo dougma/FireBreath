@@ -58,8 +58,8 @@ void NpapiAsyncDrawService::present(bool initOnly)
 
     NpapiBrowserHostPtr hostPtr = m_weakHost.lock();
     NpapiBrowserHost* host = hostPtr.get();
-
-    if (!m_device || !host)
+    ID3D10Device1* dev = device();
+    if (!dev || !host)
         return;
 
     int next = 1 - m_current;
@@ -80,7 +80,7 @@ void NpapiAsyncDrawService::present(bool initOnly)
         boost::lock_guard<boost::mutex> lock(m_mut);
         REFIID riid = __uuidof(ID3D10Texture2D);
         if (m_surface[prev].valid) {
-            HRESULT hr = m_device->OpenSharedResource(m_surface[prev].sharedHandle, __uuidof(ID3D10Texture2D), (void**) &m_pBackBuffer.p);
+            HRESULT hr = dev->OpenSharedResource(m_surface[prev].sharedHandle, __uuidof(ID3D10Texture2D), (void**) &m_pBackBuffer.p);
             if (SUCCEEDED(hr)) {
                 m_pBackBuffer->QueryInterface(&m_pBufferMutex);
                 if (m_pBufferMutex) {

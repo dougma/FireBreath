@@ -26,6 +26,7 @@ Copyright 2013 Gil Gonen and the Firebreath development team
 namespace FB
 {
     FB_FORWARD_PTR(BrowserHost);
+    FB_FORWARD_PTR(D3d10DeviceContext);
     FB_FORWARD_PTR(D3d10AsyncDrawService);
 
     class D3d10AsyncDrawService
@@ -42,10 +43,10 @@ namespace FB
 
     protected:
         virtual void present(bool init) = 0;
-        HRESULT initDevice();
+        ID3D10Device1* device() const;
 
         BrowserHostWeakPtr m_weakHost;
-        CComPtr<ID3D10Device1> m_device;
+        D3d10DeviceContextPtr m_dc;
 
         unsigned m_width, m_height;
         bool m_dimsChanged;         // since last call to present()

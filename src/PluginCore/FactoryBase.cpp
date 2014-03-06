@@ -19,6 +19,7 @@
 #ifdef FB_WIN
 #include "ActiveXFactoryDefinitions.h"
 #endif
+#include "Win/D3d10DeviceContextImpl.h"
 
 #include "PluginInfo.h"
 #include "precompiled_headers.h" // On windows, everything above this line in PCH
@@ -102,6 +103,11 @@ HRESULT FB::FactoryBase::UpdateWindowsRegistry( bool install )
 }
 
 #endif
+
+FB::D3d10DeviceContextPtr FB::FactoryBase::createD3d10DeviceContext()
+{
+    return boost::make_shared<D3d10DeviceContextImpl>();
+}
 
 #ifdef FB_MACOSX
 FB::PluginWindowMacICA* FB::FactoryBase::createPluginWindowMacICA()
