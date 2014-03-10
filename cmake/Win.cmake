@@ -12,6 +12,9 @@
 #Copyright 2009 PacketPass, Inc and the Firebreath development team
 #\**********************************************************/
 
+include(CheckIncludeFile)
+include(CheckCXXSymbolExists)
+
 # Find ATL stuff
 
 if (NOT VC_DIR)
@@ -134,29 +137,27 @@ if (NOT ATL_INCLUDE_DIR)
 
 endif()
 
-set (FB_IE9_SDK_SOURCE_DIR "${FB_SOURCE_DIR}/3rdParty/microsoft-ie/v9") 
-set (FB_IE9_SDK_LIB_DIR "${FB_IE9_SDK_SOURCE_DIR}/lib") 
-message("-- Found FB_IE9_SDK_LIB_DIR dir: ${FB_IE9_SDK_LIB_DIR}")
-
-set (FB_IE9_SDK_INCLUDE_DIR "${FB_SOURCE_DIR}/3rdParty/microsoft-ie/v9/include") 
-message("-- Found FB_IE9_SDK_INCLUDE_DIR dir: ${FB_IE9_SDK_INCLUDE_DIR}")
-
-#GET_FILENAME_COMPONENT(WINSDK_DIR "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]" REALPATH CACHE)
-## does not work!  gets v6.0!
-set (WINSDK_DIR "C:/Program Files/Microsoft SDKs/Windows/v7.0A") 
-set (WINSDK_INCLUDE_DIR "${WINSDK_DIR}/Include") 
-set (WINSDK_LIB_DIR "${WINSDK_DIR}/Lib") 
-message("-- Found WINSDK_DIR dir: ${WINSDK_DIR}")
-
-set(IE9_INCLUDE_DIRS
-	"C:/Program Files (x86)/Microsoft SDKs/Windows/v7.0A/Include"
-	${FB_IE9_SDK_INCLUDE_DIR}
-	CACHE INTERNAL "IE9 include dirs")
-
 set(ATL_INCLUDE_DIRS
     ${ATL_INCLUDE_DIR}
     ${MFC_INCLUDE_DIR}
     CACHE INTERNAL "ATL and MFC include dirs")
+
+
+# test the prerequisites for async surface drawing
+
+CHECK_CXX_SYMBOL_EXISTS(__IViewObjectPresentSite_FWD_DEFINED__ mshtml.h HAVE_IVIEWOBJECTPRESENTSITE)
+CHECK_INCLUDE_FILE(d3d10_1.h HAVE_D3D10_1)
+if(HAVE_IVIEWOBJECTPRESENTSITE AND HAVE_D3D10_1)
+    if(WITH_FBWIN_ASYNCSURFACE)
+        message("Async surface drawing will be available")
+        add_definitions(-DFBWIN_ASYNCSURFACE)
+    else()
+        message("Async surface drawing could be done, if you choose to opt in")
+    endif()
+else()
+    message("Async surface drawing prerequisites missing")
+endif()
+
 
 IF(NOT DEFINED CMAKE_MAKECAB)
 	SET(CMAKE_MAKECAB makecab)

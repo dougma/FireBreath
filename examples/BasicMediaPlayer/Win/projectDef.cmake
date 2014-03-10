@@ -25,11 +25,6 @@ add_definitions(
     /D "_ATL_STATIC_REGISTRY"
 )
 
-link_directories(
-  ${FB_IE9_SDK_LIB_DIR}
-  ${WINSDK_LIB_DIR}
-)
-
 SOURCE_GROUP(Win FILES ${PLATFORM})
 
 set (SOURCES
