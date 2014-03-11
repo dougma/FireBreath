@@ -22,6 +22,7 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include <atlctl.h>
 #include <ShlGuid.h>
 #include <mshtml.h>
+#include <boost/algorithm/string.hpp>
 #include <boost/cast.hpp>
 #include <boost/scoped_array.hpp>
 #include "DOM/Window.h"
@@ -327,7 +328,6 @@ namespace FB {
         STDMETHODIMP CFBControl<pFbCLSID, pMT,ICurObjInterface,piid,plibid>::InPlaceActivate( LONG iVerb, const RECT* prcPosRect)
         {
             m_bWindowOnly = (FB::pluginGuiEnabled() && !pluginMain->isWindowless());
-
             HRESULT hr = CComControl<CFBControlX>::InPlaceActivate(iVerb, prcPosRect);
 
             if (m_host)
@@ -341,21 +341,29 @@ namespace FB {
                 return hr;
             }
 
-            // is async desired and can we do it?
-            boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
-            if (param &&
-                0 == strcmp(param->c_str(), "AsyncWindowsDXGISurface") &&
-                m_viewObjectPresentSite &&
-                m_host)
+            std::string param = pluginMain->negotiateDrawingModel();
             {
-                BOOL accelEnabled = FALSE;
-                HRESULT hr = m_viewObjectPresentSite->IsHardwareComposition(&accelEnabled);
-                if (SUCCEEDED(hr) && accelEnabled) {
-                    hr = m_viewObjectPresentSite->SetCompositionMode(VIEW_OBJECT_COMPOSITION_MODE_SURFACEPRESENTER);
-                    if (SUCCEEDED(hr)) {
-                        AsyncDrawServicePtr asd = boost::make_shared<ActiveXAsyncDrawService>(m_host, m_viewObjectPresentSite);
-                        boost::scoped_ptr<PluginWindow> pw(getFactoryInstance()->createPluginWindowless(FB::WindowContextWindowless(NULL, asd)));
-                        pluginWin.swap(pw);
+                using namespace boost::algorithm;
+                std::vector<std::string> prefs;
+                split(prefs, param, !is_alnum());
+
+                bool gotone = false;
+                for (size_t i = 0; !gotone && i < prefs.size(); i++) {
+                    if (0 == strcmp(prefs[i].c_str(), "AsyncWindowsDXGISurface") &&
+                        m_viewObjectPresentSite &&
+                        m_host)
+                    {
+                        BOOL accelEnabled = FALSE;
+                        HRESULT hr = m_viewObjectPresentSite->IsHardwareComposition(&accelEnabled);
+                        if (SUCCEEDED(hr) && accelEnabled) {
+                            hr = m_viewObjectPresentSite->SetCompositionMode(VIEW_OBJECT_COMPOSITION_MODE_SURFACEPRESENTER);
+                            if (SUCCEEDED(hr)) {
+                                AsyncDrawServicePtr asd = boost::make_shared<ActiveXAsyncDrawService>(m_host, m_viewObjectPresentSite);
+                                boost::scoped_ptr<PluginWindow> pw(getFactoryInstance()->createPluginWindowless(FB::WindowContextWindowless(NULL, asd)));
+                                pluginWin.swap(pw);
+                                gotone = true;
+                            }
+                        }
                     }
                 }
             }

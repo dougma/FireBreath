@@ -244,3 +244,8 @@ uint32_t FBTestPlugin::asyncTestBgColor()
     return *m_asyncTestBgColor;
 }
 
+std::string FBTestPlugin::negotiateDrawingModel()
+{
+    boost::optional<std::string> param = getParam("drawingmodel");
+    return param ? *param : "";
+}

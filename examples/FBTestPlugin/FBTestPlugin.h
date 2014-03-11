@@ -54,6 +54,8 @@ public:
     virtual bool draw(FB::RefreshEvent *evt, FB::PluginWindow*);
     /** END EVENTDEF -- DON'T CHANGE THIS LINE **/
 
+    virtual std::string negotiateDrawingModel();
+
   private:
     bool startDrawAsync(FB::D3d10AsyncDrawServicePtr);
     void renderThread(FB::D3d10AsyncDrawServicePtr);

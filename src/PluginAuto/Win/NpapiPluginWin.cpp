@@ -12,6 +12,7 @@ License:    Dual license model; choose one of two:
 Copyright 2009 PacketPass, Inc and the Firebreath development team
 \**********************************************************/
 
+#include <boost/algorithm/string.hpp>
 #include <boost/make_shared.hpp>
 #include "win_common.h"
 #include "NpapiTypes.h"
@@ -35,20 +36,27 @@ struct DrawingModel {
     NPNVariable query;
     NPDrawingModel model;
 
-    bool negotiate(const NpapiBrowserHostPtr& host, const char* requested, boost::function<void(NPDrawingModel)> factory) const
+    bool negotiate(const NpapiBrowserHostPtr& host, const std::string& requested, boost::function<void(NPDrawingModel)> factory) const
     {
-        const DrawingModel* dm = this;
-        while (dm->name && strcmp(requested, dm->name)) dm++;
-        NPBool supported = false;
-        if (dm->name &&
-            NPERR_NO_ERROR == host->GetValue(dm->query, &supported) && supported &&
-            // isDrawingModelPermitted(dm->name) &&  // virtual func on NpapiPlugin? todo
-            NPERR_NO_ERROR == host->SetValue(NPPVpluginDrawingModel, (void*) dm->model))
-        {
-            factory(dm->model);
-            return true;
+        using namespace boost::algorithm;
+        std::vector<std::string> prefs;
+        split(prefs, requested, !is_alnum());
+
+        bool gotone = false;
+        for (size_t i = 0; !gotone && i < prefs.size(); i++) {
+            const DrawingModel* dm = this;
+            while (dm->name && strcmp(prefs[i].c_str(), dm->name)) dm++;
+
+            NPBool supported = false;
+            if (dm->name &&
+                NPERR_NO_ERROR == host->GetValue(dm->query, &supported) && supported &&
+                NPERR_NO_ERROR == host->SetValue(NPPVpluginDrawingModel, (void*) dm->model))
+            {
+                factory(dm->model);
+                gotone = true;
+            }
         }
-        return false;
+        return gotone;
     }
 
 };
@@ -78,6 +86,7 @@ NpapiPluginWin::~NpapiPluginWin()
 
 void NpapiPluginWin::pluginWindowFactory(NPDrawingModel model)
 {
+    // todo: support AsyncBitmapSurface as well
     AsyncDrawServicePtr asd = boost::make_shared<NpapiAsyncDrawService>(m_npHost);
     PluginWindow* pw = getFactoryInstance()->createPluginWindowless(WindowContextWindowless(NULL, asd));
     pluginWin.swap(boost::scoped_ptr<PluginWindow>(pw));
@@ -89,7 +98,7 @@ void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], cha
     NpapiPlugin::init(pluginType, argc, argn, argv);
 
     static const DrawingModel s_models[] = {
-        FB_DRAWING_MODEL(AsyncBitmapSurface),
+        // FB_DRAWING_MODEL(AsyncBitmapSurface), // still todo
         FB_DRAWING_MODEL(AsyncWindowsDXGISurface),
         FB_DRAWING_MODEL_END_LIST
     };
@@ -104,8 +113,10 @@ void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], cha
         m_npHost->SetValue(NPPVpluginTransparentBool, (void*)true); // Set transparency to true
     }
 
-    boost::optional<std::string> param = pluginMain->getParam("drawingmodel");
-    bool negotiated = param && s_models->negotiate(m_npHost, param->c_str(), boost::bind(&NpapiPluginWin::pluginWindowFactory, this, _1));
+    bool negotiated = s_models->negotiate(
+        m_npHost, 
+        pluginMain->negotiateDrawingModel(),
+        boost::bind(&NpapiPluginWin::pluginWindowFactory, this, _1));
     if (negotiated) {
         pluginMain->SetWindow(pluginWin.get());
     } 

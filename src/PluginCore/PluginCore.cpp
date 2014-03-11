@@ -165,3 +165,8 @@ void FB::PluginCore::ClearWindow()
         m_Window = NULL;
     }
 }
+
+std::string FB::PluginCore::negotiateDrawingModel()
+{
+    return "";
+}
