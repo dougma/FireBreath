@@ -21,22 +21,20 @@ Copyright 2009 PacketPass, Inc and the Firebreath development team
 #include "Win/NpapiPluginWin.h"
 #include "Win/PluginWindowWin.h"
 #include "Win/PluginWindowlessWin.h"
-#include "Win/NpapiAsyncDrawService.h"
 #include "NpapiPluginFactory.h"
 #include "PluginInfo.h"
 #include "precompiled_headers.h" // On windows, everything above this line in PCH
 
-using namespace FB::Npapi;
+#ifdef FBWIN_ASYNCSURFACE
 
-extern std::string g_dllPath;
-
+#include "Win/NpapiAsyncDrawService.h"
 
 struct DrawingModel {
     const char* name;
     NPNVariable query;
     NPDrawingModel model;
 
-    bool negotiate(const NpapiBrowserHostPtr& host, const std::string& requested, boost::function<void(NPDrawingModel)> factory) const
+    bool negotiate(const FB::Npapi::NpapiBrowserHostPtr& host, const std::string& requested, boost::function<void(NPDrawingModel)> factory) const
     {
         using namespace boost::algorithm;
         std::vector<std::string> prefs;
@@ -65,6 +63,26 @@ struct DrawingModel {
 #define FB_DRAWING_MODEL_FBLEGACYNAME(x, f) { "NPDrawingModel"#x, NPNVsupports##x##Bool, NPDrawingModel##x }
 #define FB_DRAWING_MODEL_END_LIST { 0, (NPNVariable) 0, (NPDrawingModel) 0 }
 
+static const DrawingModel g_supportedModels[] = {
+    // FB_DRAWING_MODEL(AsyncBitmapSurface), // still todo
+    FB_DRAWING_MODEL(AsyncWindowsDXGISurface),
+    FB_DRAWING_MODEL_END_LIST
+};
+
+void FB::Npapi::NpapiPluginWin::pluginWindowFactory(NPDrawingModel model)
+{
+    // todo: support AsyncBitmapSurface as well
+    AsyncDrawServicePtr asd = boost::make_shared<NpapiAsyncDrawService>(m_npHost);
+    PluginWindow* pw = getFactoryInstance()->createPluginWindowless(WindowContextWindowless(NULL, asd));
+    pluginWin.swap(boost::scoped_ptr<PluginWindow>(pw));
+    m_drawingModel = model;
+}
+
+#endif
+
+using namespace FB::Npapi;
+
+extern std::string g_dllPath;
 
 FB::Npapi::NpapiPluginPtr FB::Npapi::createNpapiPlugin(const FB::Npapi::NpapiBrowserHostPtr& host, const std::string& mimetype)
 {
@@ -84,24 +102,9 @@ NpapiPluginWin::~NpapiPluginWin()
     pluginMain->ClearWindow();
 }
 
-void NpapiPluginWin::pluginWindowFactory(NPDrawingModel model)
-{
-    // todo: support AsyncBitmapSurface as well
-    AsyncDrawServicePtr asd = boost::make_shared<NpapiAsyncDrawService>(m_npHost);
-    PluginWindow* pw = getFactoryInstance()->createPluginWindowless(WindowContextWindowless(NULL, asd));
-    pluginWin.swap(boost::scoped_ptr<PluginWindow>(pw));
-    m_drawingModel = model;
-}
-
 void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], char *argv[])
 {
     NpapiPlugin::init(pluginType, argc, argn, argv);
-
-    static const DrawingModel s_models[] = {
-        // FB_DRAWING_MODEL(AsyncBitmapSurface), // still todo
-        FB_DRAWING_MODEL(AsyncWindowsDXGISurface),
-        FB_DRAWING_MODEL_END_LIST
-    };
 
     if (!FB::pluginGuiEnabled() || pluginMain->isWindowless()) {
         /* Windowless plugins require negotiation with the browser.
@@ -113,11 +116,14 @@ void NpapiPluginWin::init(NPMIMEType pluginType, int16_t argc, char* argn[], cha
         m_npHost->SetValue(NPPVpluginTransparentBool, (void*)true); // Set transparency to true
     }
 
-    bool negotiated = s_models->negotiate(
+#ifdef FBWIN_ASYNCSURFACE
+    bool negotiated = g_supportedModels->negotiate(
         m_npHost, 
         pluginMain->negotiateDrawingModel(),
         boost::bind(&NpapiPluginWin::pluginWindowFactory, this, _1));
-    if (negotiated) {
+    if (negotiated) 
+#endif
+    {
         pluginMain->SetWindow(pluginWin.get());
     } 
 }

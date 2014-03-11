@@ -242,8 +242,10 @@ namespace FB
         virtual HRESULT                     UpdateWindowsRegistry( bool install );
 #endif
 
+#ifdef FBWIN_ASYNCSURFACE
         virtual D3d10DeviceContextPtr       createD3d10DeviceContext();
-      
+#endif
+
 #ifdef FB_MACOSX
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// @fn virtual PluginWindowMacICA* createPluginWindowMacICA();

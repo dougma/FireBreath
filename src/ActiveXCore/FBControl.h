@@ -35,7 +35,9 @@ Copyright 2009 Richard Bateman, Firebreath development team
 #include "BrowserPlugin.h"
 #include "PluginCore.h"
 #include "Win/WindowContextWin.h"
+#ifdef FBWIN_ASYNCSURFACE
 #include "ActiveXAsyncDrawService.h"
+#endif
 
 #include "registrymap.hpp"
 
@@ -73,9 +75,9 @@ namespace FB {
 
             // Provides methods for getting <params>
             public IPersistPropertyBag,
-
-			public IViewObjectPresentNotify,
-
+#ifdef FBWIN_ASYNCSURFACE
+            public IViewObjectPresentNotify,
+#endif
             public FB::BrowserPlugin
         {
         public:
@@ -140,11 +142,10 @@ namespace FB {
                 return IOleObjectImpl<CFBControlX>::Close(dwSaveOption);
             }
 
-			/* IViewObjectPresentNotify calls */
-			STDMETHOD(OnPreRender)(void) {
-				HRESULT hr = 0;
-				return hr;
-			}
+            /* IViewObjectPresentNotify calls */
+            STDMETHOD(OnPreRender)(void) {
+                return S_OK;
+            }
 
             /* IPersistPropertyBag calls */
             // This will be called once when the browser initializes the property bag (PARAM tags) 
@@ -341,6 +342,7 @@ namespace FB {
                 return hr;
             }
 
+#ifdef FBWIN_ASYNCSURFACE
             std::string param = pluginMain->negotiateDrawingModel();
             {
                 using namespace boost::algorithm;
@@ -367,6 +369,7 @@ namespace FB {
                     }
                 }
             }
+#endif
 
             if (!pluginWin) {
                 PluginWindow* pw = 0;
@@ -416,7 +419,7 @@ namespace FB {
         STDMETHODIMP CFBControl<pFbCLSID, pMT,ICurObjInterface,piid,plibid>::InitNew()
         {
             pluginMain->setParams(FB::VariantMap());
-			setReady();
+            setReady();
             return S_OK;
         }
 
@@ -454,7 +457,7 @@ namespace FB {
         STDMETHODIMP CFBControl<pFbCLSID, pMT,ICurObjInterface,piid,plibid>::Load( IPropertyBag *pPropBag, IErrorLog *pErrorLog )
         {
             pluginMain->setParams(getProperties(CComQIPtr<IPropertyBag2>(pPropBag)));
-			setReady();
+            setReady();
             return S_OK;
         }
 

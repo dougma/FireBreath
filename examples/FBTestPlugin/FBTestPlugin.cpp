@@ -23,7 +23,9 @@
 #ifdef FB_WIN
 #include "PluginWindowWin.h"
 #include "PluginWindowlessWin.h"
+#ifdef FBWIN_ASYNCSURFACE
 #include "Win/D3d10AsyncDrawService.h"
+#endif
 #endif
 
 void FBTestPlugin::StaticInitialize()
@@ -99,6 +101,7 @@ bool FBTestPlugin::onMouseMove(FB::MouseMoveEvent *evt, FB::PluginWindow*)
 
 bool FBTestPlugin::onAttached( FB::AttachedEvent *evt, FB::PluginWindow* win)
 {
+#ifdef FBWIN_ASYNCSURFACE
     // This is called when the window is attached; don't start drawing before this!
     FB::PluginWindowlessWin* windowless = dynamic_cast<FB::PluginWindowlessWin*>(win);
     if (windowless) {
@@ -107,6 +110,7 @@ bool FBTestPlugin::onAttached( FB::AttachedEvent *evt, FB::PluginWindow* win)
             startDrawAsync(ads);
         }
     }
+#endif
     return false;
 }
 
@@ -126,10 +130,12 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
     FB::PluginWindowWin *wnd = dynamic_cast<FB::PluginWindowWin*>(win);
     PAINTSTRUCT ps;
     if (wndLess) {
+#ifdef FBWIN_ASYNCSURFACE
         if (wndLess->getAsyncDrawService()) {
             // Firefox still calls draw when we are async drawing! (IE doesn't)
             return true;
         }
+#endif
         hDC = wndLess->getHDC();
     } else if (wnd) {
         hDC = BeginPaint(wnd->getHWND(), &ps);
@@ -157,6 +163,8 @@ bool FBTestPlugin::draw( FB::RefreshEvent *evt, FB::PluginWindow* win )
 
     return true;
 }
+
+#ifdef FBWIN_ASYNCSURFACE
 
 bool FBTestPlugin::startDrawAsync(FB::D3d10AsyncDrawServicePtr ads)
 {
@@ -209,6 +217,8 @@ void FBTestPlugin::ClearWindow()
     m_thread.interrupt();
     m_thread.join();
 }
+
+#endif
 
 void FBTestPlugin::onPluginReady()
 {
