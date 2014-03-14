@@ -156,6 +156,7 @@ if(HAVE_IVIEWOBJECTPRESENTSITE AND HAVE_D3D10_1)
     endif()
 else()
     message("Async surface drawing prerequisites missing")
+    set(WITH_FBWIN_ASYNCSURFACE OFF)
 endif()
 
 

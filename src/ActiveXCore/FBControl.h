@@ -93,7 +93,9 @@ namespace FB {
 
             ActiveXBrowserHostPtr m_host;
             bool m_setReadyDone;
-            CComPtr<IViewObjectPresentSite> m_viewObjectPresentSite;
+#ifdef FBWIN_ASYNCSURFACE
+			CComPtr<IViewObjectPresentSite> m_viewObjectPresentSite;
+#endif
 
         protected:
 
@@ -295,9 +297,9 @@ namespace FB {
                 shutdown();
                 return hr;
             }
-
+#ifdef FBWIN_ASYNCSURFACE
             pClientSite->QueryInterface(IID_IViewObjectPresentSite, (void **) &m_viewObjectPresentSite);
-
+#endif
             m_serviceProvider = pClientSite;
             if (!m_serviceProvider)
                 return E_FAIL;
