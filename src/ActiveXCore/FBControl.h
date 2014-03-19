@@ -298,7 +298,7 @@ namespace FB {
                 return hr;
             }
 #ifdef FBWIN_ASYNCSURFACE
-            pClientSite->QueryInterface(IID_IViewObjectPresentSite, (void **) &m_viewObjectPresentSite);
+            pClientSite->QueryInterface(__uuidof(IViewObjectPresentSite), (void **) &m_viewObjectPresentSite);
 #endif
             m_serviceProvider = pClientSite;
             if (!m_serviceProvider)

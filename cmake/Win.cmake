@@ -142,23 +142,16 @@ set(ATL_INCLUDE_DIRS
     ${MFC_INCLUDE_DIR}
     CACHE INTERNAL "ATL and MFC include dirs")
 
+option(WITH_FBWIN_ASYNCSURFACE "Build with async surface drawing support" OFF)
 
-# test the prerequisites for async surface drawing
-
-CHECK_CXX_SYMBOL_EXISTS(__IViewObjectPresentSite_FWD_DEFINED__ mshtml.h HAVE_IVIEWOBJECTPRESENTSITE)
-CHECK_INCLUDE_FILE(d3d10_1.h HAVE_D3D10_1)
-if(HAVE_IVIEWOBJECTPRESENTSITE AND HAVE_D3D10_1)
-    if(WITH_FBWIN_ASYNCSURFACE)
-        message("Async surface drawing will be available")
-        add_definitions(-DFBWIN_ASYNCSURFACE)
-    else()
-        message("Async surface drawing could be done, if you choose to opt in")
-    endif()
+if(WITH_FBWIN_ASYNCSURFACE)
+    message("Async surface drawing enabled")
+    add_definitions(-DFBWIN_ASYNCSURFACE)
 else()
-    message("Async surface drawing prerequisites missing")
-    set(WITH_FBWIN_ASYNCSURFACE OFF)
+    message("Async surface drawing not enabled")
 endif()
 
+####
 
 IF(NOT DEFINED CMAKE_MAKECAB)
 	SET(CMAKE_MAKECAB makecab)

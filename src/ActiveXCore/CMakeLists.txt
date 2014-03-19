@@ -34,13 +34,6 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     )
 
-if (WIN32)
-include_directories(
-    BEFORE
-    ${IE9_INCLUDE_DIRS}
-	)
-endif()
-
 file (GLOB AXDOM RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     AXDOM/*.cpp
     AXDOM/*.h
