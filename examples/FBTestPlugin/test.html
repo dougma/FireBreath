@@ -3,7 +3,7 @@
 <!-- The above comment makes IE treat this as a web page -->
 <html>
 <head>
-    <title>atl 8.0 test page for object fbcontrol</title>
+    <title>Test page for FBTestPlugin</title>
     <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/base/jquery-ui.css" rel="Stylesheet" />
     <style>
 
@@ -188,12 +188,12 @@
                 mimeType2 = "application/x-fbtestplugin-math",
                 mimeType3 = "application/x-fbtestmathplugin";
             var pc = $(".pluginContainer");
-//            getPlugin1 = injectPlugin(pc[0], mimeType, "pluginLoaded");  // windowed
-//            injectPlugin(pc[1], mimeType, "", 0);   // windowless synchronous
-//            injectPlugin(pc[2], mimeType, "", 1);   // windowless bitmap
-            injectPlugin(pc[3], mimeType, "", "AsyncWindowsDXGISurface");   // windowless dxgi
-//            getPlugin2 = injectPlugin($("#pluginContainer2")[0], mimeType2, "pluginLoaded2");
-//            getPlugin3 = injectPlugin($("#pluginContainer3")[0], mimeType3, "pluginLoaded3");
+            getPlugin1 = injectPlugin(pc[0], mimeType, "pluginLoaded"); // windowed
+                         injectPlugin(pc[1], mimeType, "", "windowless"); 
+                         injectPlugin(pc[2], mimeType, "", "AsyncWindowsDXGISurface");
+                         injectPlugin(pc[3], mimeType, "", "AsyncWindowsDXGISurface");
+            getPlugin2 = injectPlugin($("#pluginContainer2")[0], mimeType2, "pluginLoaded2");
+            getPlugin3 = injectPlugin($("#pluginContainer3")[0], mimeType3, "pluginLoaded3");
         }
 
         function pluginLoaded(a) {
@@ -631,16 +631,16 @@
         <small>Plugin path: <span id="pluginPath">?</span></small>
     </div>
     <div class="pluginContainer">
-        <br /><br /><br />Plugin will go here!
+        <br /><br /><br />Windowed plugin will go here!
     </div>
     <div class="pluginContainer">
         <br /><br /><br />Windowless plugin will go here!
     </div>
     <div class="pluginContainer">
-        <br /><br /><br />Windowless plugin will go here!
+        <br /><br /><br />AsyncWindowsDXGISurface plugin will go here!
     </div>
     <div class="pluginContainer">
-        <br /><br /><br />Windowless plugin will go here!
+        <br /><br /><br />AsyncWindowsDXGISurface plugin will go here!
     </div>
     <div id="pluginContainer2">
         <br /><br /><br />Plugin2 will go here!
