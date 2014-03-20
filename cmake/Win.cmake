@@ -12,9 +12,6 @@
 #Copyright 2009 PacketPass, Inc and the Firebreath development team
 #\**********************************************************/
 
-include(CheckIncludeFile)
-include(CheckCXXSymbolExists)
-
 # Find ATL stuff
 
 if (NOT VC_DIR)
@@ -136,7 +133,6 @@ if (NOT ATL_INCLUDE_DIR)
     endif()
 
 endif()
-
 set(ATL_INCLUDE_DIRS
     ${ATL_INCLUDE_DIR}
     ${MFC_INCLUDE_DIR}

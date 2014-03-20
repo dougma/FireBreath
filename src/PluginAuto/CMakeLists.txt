@@ -44,13 +44,6 @@ include_directories(
     ${FBLIB_INCLUDE_DIRS}
     )
 
-if (WIN32)
-include_directories(
-    BEFORE
-    ${IE9_INCLUDE_DIRS}
-	)
-endif()
-
 file (GLOB COMMON RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     [^.]*.cpp
     [^.]*.h

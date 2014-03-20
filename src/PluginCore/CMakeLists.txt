@@ -22,7 +22,6 @@ if (VERBOSE)
 endif()
 
 include_directories(
-    BEFORE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${GTK_INCLUDE_DIRS}
     ${FB_SCRIPTINGCORE_SOURCE_DIR}
