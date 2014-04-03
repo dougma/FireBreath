@@ -35,6 +35,7 @@ static void fblog_hr(const char* what, HRESULT hr)
 D3d10DeviceContextImpl::D3d10DeviceContextImpl()
     :_d3d10(LoadLibraryA("d3d10_1.dll"))
     ,_dxgi(LoadLibraryA("dxgi.dll"))
+    ,_hr(E_FAIL)
 {
     if (!_d3d10 || !_dxgi) {
         FBLOG_ERROR("D3d10DeviceContextImpl", "missing dlls");
@@ -51,22 +52,22 @@ D3d10DeviceContextImpl::D3d10DeviceContextImpl()
 
     // Try to use a DXGI 1.1 adapter in order to share resources across processes.
     CComPtr<IDXGIFactory1> factory1;
-    HRESULT hr = createDXGIFactory1(__uuidof(IDXGIFactory1), (void**) &factory1);
+    _hr = createDXGIFactory1(__uuidof(IDXGIFactory1), (void**) &factory1);
 
-    if (FAILED(hr) || !factory1) {
-        fblog_hr("CreateDXGIFactory1", hr);
+    if (FAILED(_hr) || !factory1) {
+        fblog_hr("CreateDXGIFactory1", _hr);
         return;
     }
 
     CComPtr<IDXGIAdapter1> adapter1;
-    hr = factory1->EnumAdapters1(0, &adapter1);
-    if (FAILED(hr) || !adapter1) {
-        fblog_hr("EnumAdapters1", hr);
+    _hr = factory1->EnumAdapters1(0, &adapter1);
+    if (FAILED(_hr) || !adapter1) {
+        fblog_hr("EnumAdapters1", _hr);
     }
 
-    hr = createDevice(createD3DDevice, adapter1);
-    if (FAILED(hr)) {
-        fblog_hr("D3D10CreateDevice1", hr);
+    _hr = createDevice(createD3DDevice, adapter1);
+    if (FAILED(_hr)) {
+        fblog_hr("D3D10CreateDevice1", _hr);
     }
 }
 
@@ -95,3 +96,7 @@ CComPtr<ID3D10Device1> D3d10DeviceContextImpl::device()
     return _dev;
 }
 
+HRESULT D3d10DeviceContextImpl::lastError()
+{
+    return _hr;
+}

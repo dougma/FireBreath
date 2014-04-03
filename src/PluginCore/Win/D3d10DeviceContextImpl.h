@@ -26,6 +26,7 @@ namespace FB
         D3d10DeviceContextImpl();
         virtual ~D3d10DeviceContextImpl();
         virtual CComPtr<ID3D10Device1> device();
+        virtual HRESULT lastError();
     
         // the actual call to D3D10CreateDevice1 can be overridden:
         typedef HRESULT (WINAPI *D3D10CreateDevice1Func)(
@@ -41,6 +42,7 @@ namespace FB
 
     protected:
         CComPtr<ID3D10Device1> _dev;
+        HRESULT _hr;
 
     private:
         HMODULE _d3d10;

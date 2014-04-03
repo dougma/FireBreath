@@ -26,6 +26,7 @@ namespace FB
     public:
         virtual ~D3d10DeviceContext() {}
         virtual CComPtr<ID3D10Device1> device() = 0;
+        virtual HRESULT lastError() = 0;
     };
 }
 
