@@ -75,21 +75,26 @@ void NpapiAsyncDrawService::present(bool initOnly)
         }
     }
     
-    // send the back buffer to the render thread
-    {
-        boost::lock_guard<boost::mutex> lock(m_mut);
-        REFIID riid = __uuidof(ID3D10Texture2D);
-        if (m_surface[prev].valid) {
-            HRESULT hr = dev->OpenSharedResource(m_surface[prev].sharedHandle, __uuidof(ID3D10Texture2D), (void**) &m_pBackBuffer.p);
-            if (SUCCEEDED(hr)) {
-                m_pBackBuffer->QueryInterface(&m_pBufferMutex);
-                if (m_pBufferMutex) {
-                    hr = m_pBufferMutex->AcquireSync(0, 50);
-                    if (FAILED(hr)) {
-                        m_pBufferMutex = 0;
-                    }
-                }
+    // obtain the texture, attempt to lock it if required, then send it to the main thread.
+    REFIID riid = __uuidof(ID3D10Texture2D);
+    if (m_surface[prev].valid) {
+        CComPtr<ID3D10Texture2D> pBackBuffer;
+        CComPtr<IDXGIKeyedMutex> pBufferMutex;
 
+        m_lastError = dev->OpenSharedResource(m_surface[prev].sharedHandle, __uuidof(ID3D10Texture2D), (void**) &pBackBuffer.p);
+        if (SUCCEEDED(m_lastError) && pBackBuffer) {
+            pBackBuffer->QueryInterface(&pBufferMutex);
+            if (pBufferMutex) {
+                m_lastError = pBufferMutex->AcquireSync(0, 50);
+                if (m_lastError != S_OK) {
+                    pBackBuffer = 0;
+                }
+            }
+
+            if (pBackBuffer) {
+                boost::lock_guard<boost::mutex> lock(m_mut);
+                m_pBackBuffer = pBackBuffer;
+                m_pBufferMutex = pBufferMutex;
                 m_cond.notify_one();
             }
         }
