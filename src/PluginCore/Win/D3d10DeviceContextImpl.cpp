@@ -29,7 +29,7 @@ static void fblog_hr(const char* what, HRESULT hr)
 {
     std::stringstream ss;
     ss << what << " failed: 0x" << std::setfill('0') << std::setw(8) << std::hex << hr;
-    FBLOG_ERROR("getD3D10Device", ss);
+    FBLOG_ERROR("getD3D10Device", ss.str());
 }
 
 D3d10DeviceContextImpl::D3d10DeviceContextImpl()
