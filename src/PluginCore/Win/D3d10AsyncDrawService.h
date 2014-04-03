@@ -42,7 +42,7 @@ namespace FB
         virtual void render(RenderCallback cb);
 
     protected:
-        virtual void present(bool init) = 0;
+        virtual void present(bool initOnly) = 0;
         ID3D10Device1* device() const;
 
         BrowserHostWeakPtr m_weakHost;

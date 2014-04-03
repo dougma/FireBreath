@@ -38,7 +38,7 @@ namespace FB {
             ActiveXAsyncDrawService(FB::BrowserHostPtr host, IViewObjectPresentSite*);
 
         private:
-            void present(bool init);
+            void present(bool initOnly);
 
             CComPtr<IViewObjectPresentSite> m_pViewObjectPresentSite;
             CComPtr<ISurfacePresenter> m_pSurfacePresenter;

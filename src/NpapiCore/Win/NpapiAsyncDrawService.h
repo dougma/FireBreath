@@ -48,7 +48,7 @@ namespace FB {
             Surface m_surface[2];
             int m_current;
 
-            virtual void present(bool resizing);
+            virtual void present(bool initOnly);
 
         public:
             NpapiAsyncDrawService(NpapiBrowserHostPtr host);
