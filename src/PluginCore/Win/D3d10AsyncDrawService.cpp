@@ -27,6 +27,7 @@ D3d10AsyncDrawService::D3d10AsyncDrawService(BrowserHostPtr host)
     , m_width(0)
     , m_height(0)
     , m_dimsChanged(false)
+    , m_lastError(S_OK)
 {
     assert(m_dc);   // the factory shouldn't fail
 }
@@ -57,35 +58,67 @@ ID3D10Device1* D3d10AsyncDrawService::device() const
     return m_dc ? m_dc->device() : 0;
 }
 
-void D3d10AsyncDrawService::render(RenderCallback cb)
+HRESULT D3d10AsyncDrawService::deviceError() const
+{
+    return m_dc ? m_dc->lastError() : E_FAIL;
+}
+
+HRESULT D3d10AsyncDrawService::render(uint32_t timeoutMs, RenderCallback cb)
 {
     ID3D10Device1* dev = device();
-    if (!dev)
-        return;
+    if (!dev) {
+        return deviceError();
+    }
 
-    boost::unique_lock<boost::mutex> lock(m_mut);
-    while (!m_pBackBuffer)
     {
-        m_cond.wait(lock);
+        boost::unique_lock<boost::mutex> lock(m_mut);
+        while (!m_pBackBuffer && m_lastError == S_OK) {
+            if (!m_cond.timed_wait(lock, boost::posix_time::milliseconds(timeoutMs))) {
+                m_lastError = WAIT_TIMEOUT;
+            }
+        }
+
+        if (m_lastError != S_OK) {
+            HRESULT hr = m_lastError;
+            m_lastError = S_OK;
+            return hr;
+        }
+
+        if (!m_pBackBuffer) {
+            return E_FAIL;
+        }
     }
 
     CComPtr<ID3D10RenderTargetView> rtView;
     HRESULT hr = dev->CreateRenderTargetView(m_pBackBuffer, NULL, &rtView);
-    if (SUCCEEDED(hr)) {
-        D3D10_TEXTURE2D_DESC desc;
-        m_pBackBuffer->GetDesc(&desc);
-
-        cb(dev, rtView, desc.Width, desc.Height);
-
-        BrowserHostPtr host(m_weakHost.lock());
-        if (host) {
-            if (host->isMainThread()) {
-                present(false);
-            } else {
-                host->ScheduleOnMainThread(this->shared_from_this(), boost::bind(&D3d10AsyncDrawService::present, this, false));
-            }
-        }
+    if (FAILED(hr)) {
+        return hr;
     }
+
+    D3D10_TEXTURE2D_DESC desc;
+    m_pBackBuffer->GetDesc(&desc);
+
+    cb(dev, rtView, desc.Width, desc.Height);   // may throw, that's ok.
+
+    BrowserHostPtr host(m_weakHost.lock());
+    if (!host) {
+        return E_FAIL;
+    }
+
+    // We will flip. Give up our back buffer pointer so that next time into
+    // this function we (possibly block waiting to) get a new back buffer.
+    {
+        boost::unique_lock<boost::mutex> lock(m_mut);
+        m_pBackBuffer = 0;
+    }
+
+    if (host->isMainThread()) {
+        present(false);
+    } else {
+        host->ScheduleOnMainThread(this->shared_from_this(), boost::bind(&D3d10AsyncDrawService::present, this, false));
+    }
+
+    return S_OK;
 }
 
 

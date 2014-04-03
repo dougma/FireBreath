@@ -25,6 +25,7 @@
 #include "PluginWindowlessWin.h"
 #ifdef FBWIN_ASYNCSURFACE
 #include "Win/D3d10AsyncDrawService.h"
+#include "logging.h"
 #endif
 #endif
 
@@ -176,10 +177,12 @@ struct Scene
 {
     uint32_t _frame;
     uint32_t _abgr; 
+    bool _test;
 
     Scene(uint32_t abgrBackground)
         : _frame(0)
         , _abgr(abgrBackground)
+        , _test(false)
     {}
 
     bool render(ID3D10Device1* device, ID3D10RenderTargetView* rtView, uint32_t width, uint32_t height)
@@ -191,6 +194,19 @@ struct Scene
         float color[4] = { b * a / 255.f, g * a / 255.f, r * a / 255.f, a };
         device->ClearRenderTargetView(rtView, color);
         // insert fancy demo here
+
+        if (_test) {
+            // occasionally test some unusual behaviours
+            if (rand() % 20 == 0) {
+                FBLOG_INFO("Scene::render", "throwing");
+                throw *this;  
+            }
+            if (rand() % 20 == 0) {
+                FBLOG_INFO("Scene::render", "going slow");
+                boost::this_thread::sleep_for(boost::chrono::milliseconds(500));
+            }
+        }
+
         ++_frame;
         return true;
     }
@@ -198,16 +214,26 @@ struct Scene
 
 void FBTestPlugin::renderThread(FB::D3d10AsyncDrawServicePtr ads)
 {
-    try {
-        Scene scene(asyncTestBgColor());
-        do {
-            ads->render(boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
+    Scene scene(asyncTestBgColor());
+    while (true) {
+        try {
+            HRESULT hr = ads->render(20, boost::bind(&Scene::render, &scene, _1, _2, _3, _4));
+            if (hr != S_OK) 
+            {
+                std::stringstream ss;
+                ss << "render returned error: 0x" << std::setfill('0') << std::setw(8) << std::hex << hr;
+                FBLOG_ERROR("FBTestPlugin::renderThread", ss.str());
+            }
             boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
-        } while(true);
-    }
-    catch (boost::thread_interrupted) {
-        // this is expected
-    }
+        }
+        catch (const Scene& ) {
+            // this is our test exception, just keep going
+        }
+        catch (boost::thread_interrupted) {
+            // this is expected when stopping the thread
+            break;
+        }
+    };
 }
 
 //virtual

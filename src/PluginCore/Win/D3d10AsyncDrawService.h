@@ -39,11 +39,12 @@ namespace FB
         ~D3d10AsyncDrawService();
 
         void resized(uint32_t width, uint32_t height);
-        virtual void render(RenderCallback cb);
+        virtual HRESULT render(uint32_t timeoutMs, RenderCallback cb);
 
     protected:
         virtual void present(bool initOnly) = 0;
         ID3D10Device1* device() const;
+        HRESULT deviceError() const;
 
         BrowserHostWeakPtr m_weakHost;
         D3d10DeviceContextPtr m_dc;
@@ -55,6 +56,7 @@ namespace FB
         boost::condition_variable m_cond;
         CComPtr<ID3D10Texture2D> m_pBackBuffer;
         CComPtr<IDXGIKeyedMutex> m_pBufferMutex;
+        HRESULT m_lastError;        // from last call to present()
     };  
 }
 
